@@ -1673,7 +1673,7 @@ Error encode_variant(const Variant &p_variant, uint8_t *r_buffer, int &r_len, bo
 
 					int pc = 0;
 					for (const PropertyInfo &E : props) {
-						if (!(E.usage & PROPERTY_USAGE_STORAGE)) {
+						if (!(E.usage & PropertyUsageFlags::STORAGE)) {
 							continue;
 						}
 						pc++;
@@ -1687,7 +1687,7 @@ Error encode_variant(const Variant &p_variant, uint8_t *r_buffer, int &r_len, bo
 					r_len += 4;
 
 					for (const PropertyInfo &E : props) {
-						if (!(E.usage & PROPERTY_USAGE_STORAGE)) {
+						if (!(E.usage & PropertyUsageFlags::STORAGE)) {
 							continue;
 						}
 

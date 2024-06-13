@@ -99,7 +99,7 @@ void Font::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_supported_variation_list"), &Font::get_supported_variation_list);
 	ClassDB::bind_method(D_METHOD("get_face_count"), &Font::get_face_count);
 
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "fallbacks", PROPERTY_HINT_ARRAY_TYPE, MAKE_RESOURCE_TYPE_HINT("Font")), "set_fallbacks", "get_fallbacks");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "fallbacks", PropertyHint::ARRAY_TYPE, MAKE_RESOURCE_TYPE_HINT("Font")), "set_fallbacks", "get_fallbacks");
 }
 
 void Font::_update_rids_fb(const Ref<Font> &p_f, int p_depth) const {
@@ -288,7 +288,6 @@ Size2 Font::get_string_size(const String &p_text, HorizontalAlignment p_alignmen
 		buffer.instantiate();
 		buffer->set_direction(p_direction);
 		buffer->set_orientation(p_orientation);
-		buffer->set_text_overrun_behavior(TextServer::OVERRUN_TRIM_CHAR);
 		buffer->add_string(p_text, Ref<Font>(this), p_font_size);
 		cache.insert(key, buffer);
 	}
@@ -316,7 +315,6 @@ Size2 Font::get_multiline_string_size(const String &p_text, HorizontalAlignment 
 		lines_buffer->set_width(p_width);
 		lines_buffer->set_break_flags(p_brk_flags);
 		lines_buffer->set_justification_flags(p_jst_flags);
-		lines_buffer->set_text_overrun_behavior(TextServer::OVERRUN_TRIM_CHAR);
 		cache_wrap.insert(key, lines_buffer);
 	}
 
@@ -337,7 +335,6 @@ void Font::draw_string(RID p_canvas_item, const Point2 &p_pos, const String &p_t
 		buffer.instantiate();
 		buffer->set_direction(p_direction);
 		buffer->set_orientation(p_orientation);
-		buffer->set_text_overrun_behavior(TextServer::OVERRUN_TRIM_CHAR);
 		buffer->add_string(p_text, Ref<Font>(this), p_font_size);
 		cache.insert(key, buffer);
 	}
@@ -372,7 +369,6 @@ void Font::draw_multiline_string(RID p_canvas_item, const Point2 &p_pos, const S
 		lines_buffer->set_width(p_width);
 		lines_buffer->set_break_flags(p_brk_flags);
 		lines_buffer->set_justification_flags(p_jst_flags);
-		lines_buffer->set_text_overrun_behavior(TextServer::OVERRUN_TRIM_CHAR);
 		cache_wrap.insert(key, lines_buffer);
 	}
 
@@ -400,7 +396,6 @@ void Font::draw_string_outline(RID p_canvas_item, const Point2 &p_pos, const Str
 		buffer.instantiate();
 		buffer->set_direction(p_direction);
 		buffer->set_orientation(p_orientation);
-		buffer->set_text_overrun_behavior(TextServer::OVERRUN_TRIM_CHAR);
 		buffer->add_string(p_text, Ref<Font>(this), p_font_size);
 		cache.insert(key, buffer);
 	}
@@ -435,7 +430,6 @@ void Font::draw_multiline_string_outline(RID p_canvas_item, const Point2 &p_pos,
 		lines_buffer->set_width(p_width);
 		lines_buffer->set_break_flags(p_brk_flags);
 		lines_buffer->set_justification_flags(p_jst_flags);
-		lines_buffer->set_text_overrun_behavior(TextServer::OVERRUN_TRIM_CHAR);
 		cache_wrap.insert(key, lines_buffer);
 	}
 
@@ -576,7 +570,6 @@ _FORCE_INLINE_ void FontFile::_ensure_rid(int p_cache_index, int p_make_linked_f
 			TS->font_set_data_ptr(cache[p_cache_index], data_ptr, data_size);
 			TS->font_set_antialiasing(cache[p_cache_index], antialiasing);
 			TS->font_set_generate_mipmaps(cache[p_cache_index], mipmaps);
-			TS->font_set_disable_embedded_bitmaps(cache[p_cache_index], disable_embedded_bitmaps);
 			TS->font_set_multichannel_signed_distance_field(cache[p_cache_index], msdf);
 			TS->font_set_msdf_pixel_range(cache[p_cache_index], msdf_pixel_range);
 			TS->font_set_msdf_size(cache[p_cache_index], msdf_size);
@@ -882,9 +875,6 @@ void FontFile::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_antialiasing", "antialiasing"), &FontFile::set_antialiasing);
 	ClassDB::bind_method(D_METHOD("get_antialiasing"), &FontFile::get_antialiasing);
 
-	ClassDB::bind_method(D_METHOD("set_disable_embedded_bitmaps", "disable_embedded_bitmaps"), &FontFile::set_disable_embedded_bitmaps);
-	ClassDB::bind_method(D_METHOD("get_disable_embedded_bitmaps"), &FontFile::get_disable_embedded_bitmaps);
-
 	ClassDB::bind_method(D_METHOD("set_generate_mipmaps", "generate_mipmaps"), &FontFile::set_generate_mipmaps);
 	ClassDB::bind_method(D_METHOD("get_generate_mipmaps"), &FontFile::get_generate_mipmaps);
 
@@ -1014,32 +1004,31 @@ void FontFile::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_glyph_index", "size", "char", "variation_selector"), &FontFile::get_glyph_index);
 	ClassDB::bind_method(D_METHOD("get_char_from_glyph_index", "size", "glyph_index"), &FontFile::get_char_from_glyph_index);
 
-	ADD_PROPERTY(PropertyInfo(Variant::PACKED_BYTE_ARRAY, "data", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_data", "get_data");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_mipmaps", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_generate_mipmaps", "get_generate_mipmaps");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "disable_embedded_bitmaps", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_disable_embedded_bitmaps", "get_disable_embedded_bitmaps");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "antialiasing", PROPERTY_HINT_ENUM, "None,Grayscale,LCD Subpixel", PROPERTY_USAGE_STORAGE), "set_antialiasing", "get_antialiasing");
-	ADD_PROPERTY(PropertyInfo(Variant::STRING, "font_name", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_font_name", "get_font_name");
-	ADD_PROPERTY(PropertyInfo(Variant::STRING, "style_name", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_font_style_name", "get_font_style_name");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "font_style", PROPERTY_HINT_FLAGS, "Bold,Italic,Fixed Size", PROPERTY_USAGE_STORAGE), "set_font_style", "get_font_style");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "font_weight", PROPERTY_HINT_RANGE, "100,999,25", PROPERTY_USAGE_STORAGE), "set_font_weight", "get_font_weight");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "font_stretch", PROPERTY_HINT_RANGE, "50,200,25", PROPERTY_USAGE_STORAGE), "set_font_stretch", "get_font_stretch");
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_BYTE_ARRAY, "data", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE), "set_data", "get_data");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_mipmaps", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE), "set_generate_mipmaps", "get_generate_mipmaps");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "antialiasing", PropertyHint::ENUM, "None,Grayscale,LCD Subpixel", PropertyUsageFlags::STORAGE), "set_antialiasing", "get_antialiasing");
+	ADD_PROPERTY(PropertyInfo(Variant::STRING, "font_name", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE), "set_font_name", "get_font_name");
+	ADD_PROPERTY(PropertyInfo(Variant::STRING, "style_name", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE), "set_font_style_name", "get_font_style_name");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "font_style", PropertyHint::FLAGS, "Bold,Italic,Fixed Size", PropertyUsageFlags::STORAGE), "set_font_style", "get_font_style");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "font_weight", PropertyHint::RANGE, "100,999,25", PropertyUsageFlags::STORAGE), "set_font_weight", "get_font_weight");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "font_stretch", PropertyHint::RANGE, "50,200,25", PropertyUsageFlags::STORAGE), "set_font_stretch", "get_font_stretch");
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "subpixel_positioning", PROPERTY_HINT_ENUM, "Disabled,Auto,One Half of a Pixel,One Quarter of a Pixel", PROPERTY_USAGE_STORAGE), "set_subpixel_positioning", "get_subpixel_positioning");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "multichannel_signed_distance_field", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_multichannel_signed_distance_field", "is_multichannel_signed_distance_field");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "msdf_pixel_range", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_msdf_pixel_range", "get_msdf_pixel_range");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "msdf_size", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_msdf_size", "get_msdf_size");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "allow_system_fallback", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_allow_system_fallback", "is_allow_system_fallback");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "force_autohinter", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_force_autohinter", "is_force_autohinter");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "hinting", PROPERTY_HINT_ENUM, "None,Light,Normal", PROPERTY_USAGE_STORAGE), "set_hinting", "get_hinting");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "oversampling", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_oversampling", "get_oversampling");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "fixed_size", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_fixed_size", "get_fixed_size");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "fixed_size_scale_mode", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_fixed_size_scale_mode", "get_fixed_size_scale_mode");
-	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "opentype_feature_overrides", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_opentype_feature_overrides", "get_opentype_feature_overrides");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "subpixel_positioning", PropertyHint::ENUM, "Disabled,Auto,One Half of a Pixel,One Quarter of a Pixel", PropertyUsageFlags::STORAGE), "set_subpixel_positioning", "get_subpixel_positioning");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "multichannel_signed_distance_field", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE), "set_multichannel_signed_distance_field", "is_multichannel_signed_distance_field");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "msdf_pixel_range", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE), "set_msdf_pixel_range", "get_msdf_pixel_range");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "msdf_size", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE), "set_msdf_size", "get_msdf_size");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "allow_system_fallback", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE), "set_allow_system_fallback", "is_allow_system_fallback");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "force_autohinter", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE), "set_force_autohinter", "is_force_autohinter");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "hinting", PropertyHint::ENUM, "None,Light,Normal", PropertyUsageFlags::STORAGE), "set_hinting", "get_hinting");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "oversampling", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE), "set_oversampling", "get_oversampling");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "fixed_size", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE), "set_fixed_size", "get_fixed_size");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "fixed_size_scale_mode", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE), "set_fixed_size_scale_mode", "get_fixed_size_scale_mode");
+	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "opentype_feature_overrides", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE), "set_opentype_feature_overrides", "get_opentype_feature_overrides");
 }
 
 void FontFile::_validate_property(PropertyInfo &p_property) const {
 	if (p_property.name == "fallbacks") {
-		p_property.usage &= ~PROPERTY_USAGE_EDITOR;
+		p_property.usage &= ~PropertyUsageFlags::EDITOR;
 	}
 }
 
@@ -1320,57 +1309,57 @@ bool FontFile::_get(const StringName &p_name, Variant &r_ret) const {
 void FontFile::_get_property_list(List<PropertyInfo> *p_list) const {
 	Vector<String> lang_over = get_language_support_overrides();
 	for (int i = 0; i < lang_over.size(); i++) {
-		p_list->push_back(PropertyInfo(Variant::BOOL, "language_support_override/" + lang_over[i], PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
+		p_list->push_back(PropertyInfo(Variant::BOOL, "language_support_override/" + lang_over[i], PropertyHint::NONE, "", PropertyUsageFlags::STORAGE));
 	}
 	Vector<String> scr_over = get_script_support_overrides();
 	for (int i = 0; i < scr_over.size(); i++) {
-		p_list->push_back(PropertyInfo(Variant::BOOL, "script_support_override/" + scr_over[i], PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
+		p_list->push_back(PropertyInfo(Variant::BOOL, "script_support_override/" + scr_over[i], PropertyHint::NONE, "", PropertyUsageFlags::STORAGE));
 	}
 	for (int i = 0; i < cache.size(); i++) {
 		String prefix = "cache/" + itos(i) + "/";
 		TypedArray<Vector2i> sizes = get_size_cache_list(i);
-		p_list->push_back(PropertyInfo(Variant::DICTIONARY, prefix + "variation_coordinates", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
-		p_list->push_back(PropertyInfo(Variant::INT, prefix + "face_index", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
-		p_list->push_back(PropertyInfo(Variant::FLOAT, prefix + "embolden", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
-		p_list->push_back(PropertyInfo(Variant::TRANSFORM2D, prefix + "transform", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
-		p_list->push_back(PropertyInfo(Variant::INT, prefix + "spacing_top", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
-		p_list->push_back(PropertyInfo(Variant::INT, prefix + "spacing_bottom", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
-		p_list->push_back(PropertyInfo(Variant::INT, prefix + "spacing_space", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
-		p_list->push_back(PropertyInfo(Variant::INT, prefix + "spacing_glyph", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
-		p_list->push_back(PropertyInfo(Variant::FLOAT, prefix + "baseline_offset", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
+		p_list->push_back(PropertyInfo(Variant::DICTIONARY, prefix + "variation_coordinates", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE));
+		p_list->push_back(PropertyInfo(Variant::INT, prefix + "face_index", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE));
+		p_list->push_back(PropertyInfo(Variant::FLOAT, prefix + "embolden", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE));
+		p_list->push_back(PropertyInfo(Variant::TRANSFORM2D, prefix + "transform", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE));
+		p_list->push_back(PropertyInfo(Variant::INT, prefix + "spacing_top", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE));
+		p_list->push_back(PropertyInfo(Variant::INT, prefix + "spacing_bottom", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE));
+		p_list->push_back(PropertyInfo(Variant::INT, prefix + "spacing_space", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE));
+		p_list->push_back(PropertyInfo(Variant::INT, prefix + "spacing_glyph", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE));
+		p_list->push_back(PropertyInfo(Variant::FLOAT, prefix + "baseline_offset", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE));
 
 		for (int j = 0; j < sizes.size(); j++) {
 			Vector2i sz = sizes[j];
 			String prefix_sz = prefix + itos(sz.x) + "/" + itos(sz.y) + "/";
 			if (sz.y == 0) {
-				p_list->push_back(PropertyInfo(Variant::FLOAT, prefix_sz + "ascent", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
-				p_list->push_back(PropertyInfo(Variant::FLOAT, prefix_sz + "descent", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
-				p_list->push_back(PropertyInfo(Variant::FLOAT, prefix_sz + "underline_position", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
-				p_list->push_back(PropertyInfo(Variant::FLOAT, prefix_sz + "underline_thickness", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
-				p_list->push_back(PropertyInfo(Variant::FLOAT, prefix_sz + "scale", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
+				p_list->push_back(PropertyInfo(Variant::FLOAT, prefix_sz + "ascent", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE));
+				p_list->push_back(PropertyInfo(Variant::FLOAT, prefix_sz + "descent", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE));
+				p_list->push_back(PropertyInfo(Variant::FLOAT, prefix_sz + "underline_position", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE));
+				p_list->push_back(PropertyInfo(Variant::FLOAT, prefix_sz + "underline_thickness", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE));
+				p_list->push_back(PropertyInfo(Variant::FLOAT, prefix_sz + "scale", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE));
 			}
 
 			int tx_cnt = get_texture_count(i, sz);
 			for (int k = 0; k < tx_cnt; k++) {
-				p_list->push_back(PropertyInfo(Variant::PACKED_INT32_ARRAY, prefix_sz + "textures/" + itos(k) + "/offsets", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
-				p_list->push_back(PropertyInfo(Variant::OBJECT, prefix_sz + "textures/" + itos(k) + "/image", PROPERTY_HINT_RESOURCE_TYPE, "Image", PROPERTY_USAGE_STORAGE));
+				p_list->push_back(PropertyInfo(Variant::PACKED_INT32_ARRAY, prefix_sz + "textures/" + itos(k) + "/offsets", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE));
+				p_list->push_back(PropertyInfo(Variant::OBJECT, prefix_sz + "textures/" + itos(k) + "/image", PropertyHint::RESOURCE_TYPE, "Image", PropertyUsageFlags::STORAGE | PropertyUsageFlags::RESOURCE_NOT_PERSISTENT));
 			}
 			PackedInt32Array glyphs = get_glyph_list(i, sz);
 			for (int k = 0; k < glyphs.size(); k++) {
 				const int32_t &gl = glyphs[k];
 				if (sz.y == 0) {
-					p_list->push_back(PropertyInfo(Variant::VECTOR2, prefix_sz + "glyphs/" + itos(gl) + "/advance", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
+					p_list->push_back(PropertyInfo(Variant::VECTOR2, prefix_sz + "glyphs/" + itos(gl) + "/advance", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE));
 				}
-				p_list->push_back(PropertyInfo(Variant::VECTOR2, prefix_sz + "glyphs/" + itos(gl) + "/offset", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
-				p_list->push_back(PropertyInfo(Variant::VECTOR2, prefix_sz + "glyphs/" + itos(gl) + "/size", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
-				p_list->push_back(PropertyInfo(Variant::RECT2, prefix_sz + "glyphs/" + itos(gl) + "/uv_rect", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
-				p_list->push_back(PropertyInfo(Variant::INT, prefix_sz + "glyphs/" + itos(gl) + "/texture_idx", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
+				p_list->push_back(PropertyInfo(Variant::VECTOR2, prefix_sz + "glyphs/" + itos(gl) + "/offset", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE));
+				p_list->push_back(PropertyInfo(Variant::VECTOR2, prefix_sz + "glyphs/" + itos(gl) + "/size", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE));
+				p_list->push_back(PropertyInfo(Variant::RECT2, prefix_sz + "glyphs/" + itos(gl) + "/uv_rect", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE));
+				p_list->push_back(PropertyInfo(Variant::INT, prefix_sz + "glyphs/" + itos(gl) + "/texture_idx", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE));
 			}
 			if (sz.y == 0) {
 				TypedArray<Vector2i> kerning_map = get_kerning_list(i, sz.x);
 				for (int k = 0; k < kerning_map.size(); k++) {
 					const Vector2i &gl_pair = kerning_map[k];
-					p_list->push_back(PropertyInfo(Variant::VECTOR2, prefix_sz + "kerning_overrides/" + itos(gl_pair.x) + "/" + itos(gl_pair.y), PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
+					p_list->push_back(PropertyInfo(Variant::VECTOR2, prefix_sz + "kerning_overrides/" + itos(gl_pair.x) + "/" + itos(gl_pair.y), PropertyHint::NONE, "", PropertyUsageFlags::STORAGE));
 				}
 			}
 		}
@@ -1386,7 +1375,6 @@ void FontFile::reset_state() {
 
 	antialiasing = TextServer::FONT_ANTIALIASING_GRAY;
 	mipmaps = false;
-	disable_embedded_bitmaps = true;
 	msdf = false;
 	force_autohinter = false;
 	allow_system_fallback = true;
@@ -1417,15 +1405,10 @@ static const char32_t _oem_to_unicode[][129] = {
 };
 
 Error FontFile::load_bitmap_font(const String &p_path) {
-	return _load_bitmap_font(p_path, nullptr);
-}
-
-Error FontFile::_load_bitmap_font(const String &p_path, List<String> *r_image_files) {
 	reset_state();
 
 	antialiasing = TextServer::FONT_ANTIALIASING_NONE;
 	mipmaps = false;
-	disable_embedded_bitmaps = true;
 	msdf = false;
 	force_autohinter = false;
 	allow_system_fallback = true;
@@ -1562,9 +1545,6 @@ Error FontFile::_load_bitmap_font(const String &p_path, List<String> *r_image_fi
 								img.instantiate();
 								Error err = ImageLoader::load_image(file, img);
 								ERR_FAIL_COND_V_MSG(err != OK, ERR_FILE_CANT_READ, vformat("Can't load font texture: %s.", file));
-								if (r_image_files) {
-									r_image_files->push_back(file);
-								}
 
 								if (packed) {
 									if (ch[3] == 0) { // 4 x 8 bit monochrome, no outline
@@ -1856,10 +1836,6 @@ Error FontFile::_load_bitmap_font(const String &p_path, List<String> *r_image_fi
 						img.instantiate();
 						Error err = ImageLoader::load_image(file, img);
 						ERR_FAIL_COND_V_MSG(err != OK, ERR_FILE_CANT_READ, vformat("Can't load font texture: %s.", file));
-						if (r_image_files) {
-							r_image_files->push_back(file);
-						}
-
 						if (packed) {
 							if (ch[3] == 0) { // 4 x 8 bit monochrome, no outline
 								outline = 0;
@@ -2107,21 +2083,6 @@ void FontFile::set_antialiasing(TextServer::FontAntialiasing p_antialiasing) {
 
 TextServer::FontAntialiasing FontFile::get_antialiasing() const {
 	return antialiasing;
-}
-
-void FontFile::set_disable_embedded_bitmaps(bool p_disable_embedded_bitmaps) {
-	if (disable_embedded_bitmaps != p_disable_embedded_bitmaps) {
-		disable_embedded_bitmaps = p_disable_embedded_bitmaps;
-		for (int i = 0; i < cache.size(); i++) {
-			_ensure_rid(i);
-			TS->font_set_disable_embedded_bitmaps(cache[i], disable_embedded_bitmaps);
-		}
-		emit_changed();
-	}
-}
-
-bool FontFile::get_disable_embedded_bitmaps() const {
-	return disable_embedded_bitmaps;
 }
 
 void FontFile::set_generate_mipmaps(bool p_generate_mipmaps) {
@@ -2798,25 +2759,25 @@ void FontVariation::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_baseline_offset", "baseline_offset"), &FontVariation::set_baseline_offset);
 	ClassDB::bind_method(D_METHOD("get_baseline_offset"), &FontVariation::get_baseline_offset);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "base_font", PROPERTY_HINT_RESOURCE_TYPE, "Font"), "set_base_font", "get_base_font");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "base_font", PropertyHint::RESOURCE_TYPE, "Font"), "set_base_font", "get_base_font");
 
 	ADD_GROUP("Variation", "variation_");
 	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "variation_opentype"), "set_variation_opentype", "get_variation_opentype");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "variation_face_index"), "set_variation_face_index", "get_variation_face_index");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "variation_embolden", PROPERTY_HINT_RANGE, "-2,2,0.01"), "set_variation_embolden", "get_variation_embolden");
-	ADD_PROPERTY(PropertyInfo(Variant::TRANSFORM2D, "variation_transform", PROPERTY_HINT_NONE, "suffix:px"), "set_variation_transform", "get_variation_transform");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "variation_embolden", PropertyHint::RANGE, "-2,2,0.01"), "set_variation_embolden", "get_variation_embolden");
+	ADD_PROPERTY(PropertyInfo(Variant::TRANSFORM2D, "variation_transform", PropertyHint::NONE, "suffix:px"), "set_variation_transform", "get_variation_transform");
 
 	ADD_GROUP("OpenType Features", "opentype_");
 	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "opentype_features"), "set_opentype_features", "get_opentype_features");
 
 	ADD_GROUP("Extra Spacing", "spacing_");
-	ADD_PROPERTYI(PropertyInfo(Variant::INT, "spacing_glyph", PROPERTY_HINT_NONE, "suffix:px"), "set_spacing", "get_spacing", TextServer::SPACING_GLYPH);
-	ADD_PROPERTYI(PropertyInfo(Variant::INT, "spacing_space", PROPERTY_HINT_NONE, "suffix:px"), "set_spacing", "get_spacing", TextServer::SPACING_SPACE);
-	ADD_PROPERTYI(PropertyInfo(Variant::INT, "spacing_top", PROPERTY_HINT_NONE, "suffix:px"), "set_spacing", "get_spacing", TextServer::SPACING_TOP);
-	ADD_PROPERTYI(PropertyInfo(Variant::INT, "spacing_bottom", PROPERTY_HINT_NONE, "suffix:px"), "set_spacing", "get_spacing", TextServer::SPACING_BOTTOM);
+	ADD_PROPERTYI(PropertyInfo(Variant::INT, "spacing_glyph", PropertyHint::NONE, "suffix:px"), "set_spacing", "get_spacing", TextServer::SPACING_GLYPH);
+	ADD_PROPERTYI(PropertyInfo(Variant::INT, "spacing_space", PropertyHint::NONE, "suffix:px"), "set_spacing", "get_spacing", TextServer::SPACING_SPACE);
+	ADD_PROPERTYI(PropertyInfo(Variant::INT, "spacing_top", PropertyHint::NONE, "suffix:px"), "set_spacing", "get_spacing", TextServer::SPACING_TOP);
+	ADD_PROPERTYI(PropertyInfo(Variant::INT, "spacing_bottom", PropertyHint::NONE, "suffix:px"), "set_spacing", "get_spacing", TextServer::SPACING_BOTTOM);
 
 	ADD_GROUP("Baseline", "baseline_");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "baseline_offset", PROPERTY_HINT_RANGE, "-2,2,0.005"), "set_baseline_offset", "get_baseline_offset");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "baseline_offset", PropertyHint::RANGE, "-2,2,0.005"), "set_baseline_offset", "get_baseline_offset");
 }
 
 void FontVariation::_update_rids() const {
@@ -2894,12 +2855,7 @@ Ref<Font> FontVariation::_get_base_font_or_default() const {
 	ThemeDB::get_singleton()->get_native_type_dependencies(get_class_name(), &theme_types);
 
 	ThemeContext *global_context = ThemeDB::get_singleton()->get_default_theme_context();
-	List<Ref<Theme>> themes = global_context->get_themes();
-	if (Engine::get_singleton()->is_editor_hint()) {
-		themes.push_front(ThemeDB::get_singleton()->get_project_theme());
-	}
-
-	for (const Ref<Theme> &theme : themes) {
+	for (const Ref<Theme> &theme : global_context->get_themes()) {
 		if (theme.is_null()) {
 			continue;
 		}
@@ -3045,9 +3001,6 @@ void SystemFont::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_antialiasing", "antialiasing"), &SystemFont::set_antialiasing);
 	ClassDB::bind_method(D_METHOD("get_antialiasing"), &SystemFont::get_antialiasing);
 
-	ClassDB::bind_method(D_METHOD("set_disable_embedded_bitmaps", "disable_embedded_bitmaps"), &SystemFont::set_disable_embedded_bitmaps);
-	ClassDB::bind_method(D_METHOD("get_disable_embedded_bitmaps"), &SystemFont::get_disable_embedded_bitmaps);
-
 	ClassDB::bind_method(D_METHOD("set_generate_mipmaps", "generate_mipmaps"), &SystemFont::set_generate_mipmaps);
 	ClassDB::bind_method(D_METHOD("get_generate_mipmaps"), &SystemFont::get_generate_mipmaps);
 
@@ -3085,19 +3038,18 @@ void SystemFont::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_STRING_ARRAY, "font_names"), "set_font_names", "get_font_names");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "font_italic"), "set_font_italic", "get_font_italic");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "font_weight", PROPERTY_HINT_RANGE, "100,999,25"), "set_font_weight", "get_font_weight");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "font_stretch", PROPERTY_HINT_RANGE, "50,200,25"), "set_font_stretch", "get_font_stretch");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "antialiasing", PROPERTY_HINT_ENUM, "None,Grayscale,LCD Subpixel", PROPERTY_USAGE_STORAGE), "set_antialiasing", "get_antialiasing");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "font_weight", PropertyHint::RANGE, "100,999,25"), "set_font_weight", "get_font_weight");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "font_stretch", PropertyHint::RANGE, "50,200,25"), "set_font_stretch", "get_font_stretch");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "antialiasing", PropertyHint::ENUM, "None,Grayscale,LCD Subpixel", PropertyUsageFlags::STORAGE), "set_antialiasing", "get_antialiasing");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_mipmaps"), "set_generate_mipmaps", "get_generate_mipmaps");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "disable_embedded_bitmaps"), "set_disable_embedded_bitmaps", "get_disable_embedded_bitmaps");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "allow_system_fallback"), "set_allow_system_fallback", "is_allow_system_fallback");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "force_autohinter"), "set_force_autohinter", "is_force_autohinter");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "hinting", PROPERTY_HINT_ENUM, "None,Light,Normal"), "set_hinting", "get_hinting");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "subpixel_positioning", PROPERTY_HINT_ENUM, "Disabled,Auto,One Half of a Pixel,One Quarter of a Pixel"), "set_subpixel_positioning", "get_subpixel_positioning");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "hinting", PropertyHint::ENUM, "None,Light,Normal"), "set_hinting", "get_hinting");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "subpixel_positioning", PropertyHint::ENUM, "Disabled,Auto,One Half of a Pixel,One Quarter of a Pixel"), "set_subpixel_positioning", "get_subpixel_positioning");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "multichannel_signed_distance_field"), "set_multichannel_signed_distance_field", "is_multichannel_signed_distance_field");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "msdf_pixel_range"), "set_msdf_pixel_range", "get_msdf_pixel_range");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "msdf_size"), "set_msdf_size", "get_msdf_size");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "oversampling", PROPERTY_HINT_RANGE, "0,10,0.1"), "set_oversampling", "get_oversampling");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "oversampling", PropertyHint::RANGE, "0,10,0.1"), "set_oversampling", "get_oversampling");
 }
 
 void SystemFont::_update_rids() const {
@@ -3193,7 +3145,6 @@ void SystemFont::_update_base_font() {
 		// Apply font rendering settings.
 		file->set_antialiasing(antialiasing);
 		file->set_generate_mipmaps(mipmaps);
-		file->set_disable_embedded_bitmaps(disable_embedded_bitmaps);
 		file->set_force_autohinter(force_autohinter);
 		file->set_allow_system_fallback(allow_system_fallback);
 		file->set_hinting(hinting);
@@ -3237,7 +3188,6 @@ void SystemFont::reset_state() {
 	stretch = 100;
 	antialiasing = TextServer::FONT_ANTIALIASING_GRAY;
 	mipmaps = false;
-	disable_embedded_bitmaps = true;
 	force_autohinter = false;
 	allow_system_fallback = true;
 	hinting = TextServer::HINTING_LIGHT;
@@ -3309,20 +3259,6 @@ void SystemFont::set_antialiasing(TextServer::FontAntialiasing p_antialiasing) {
 
 TextServer::FontAntialiasing SystemFont::get_antialiasing() const {
 	return antialiasing;
-}
-
-void SystemFont::set_disable_embedded_bitmaps(bool p_disable_embedded_bitmaps) {
-	if (disable_embedded_bitmaps != p_disable_embedded_bitmaps) {
-		disable_embedded_bitmaps = p_disable_embedded_bitmaps;
-		if (base_font.is_valid()) {
-			base_font->set_disable_embedded_bitmaps(disable_embedded_bitmaps);
-		}
-		emit_changed();
-	}
-}
-
-bool SystemFont::get_disable_embedded_bitmaps() const {
-	return disable_embedded_bitmaps;
 }
 
 void SystemFont::set_generate_mipmaps(bool p_generate_mipmaps) {

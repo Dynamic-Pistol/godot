@@ -90,8 +90,6 @@ void GLTFState::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_skeletons", "skeletons"), &GLTFState::set_skeletons);
 	ClassDB::bind_method(D_METHOD("get_create_animations"), &GLTFState::get_create_animations);
 	ClassDB::bind_method(D_METHOD("set_create_animations", "create_animations"), &GLTFState::set_create_animations);
-	ClassDB::bind_method(D_METHOD("get_import_as_skeleton_bones"), &GLTFState::get_import_as_skeleton_bones);
-	ClassDB::bind_method(D_METHOD("set_import_as_skeleton_bones", "import_as_skeleton_bones"), &GLTFState::set_import_as_skeleton_bones);
 	ClassDB::bind_method(D_METHOD("get_animations"), &GLTFState::get_animations);
 	ClassDB::bind_method(D_METHOD("set_animations", "animations"), &GLTFState::set_animations);
 	ClassDB::bind_method(D_METHOD("get_scene_node", "idx"), &GLTFState::get_scene_node);
@@ -100,8 +98,6 @@ void GLTFState::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_additional_data", "extension_name", "additional_data"), &GLTFState::set_additional_data);
 	ClassDB::bind_method(D_METHOD("get_handle_binary_image"), &GLTFState::get_handle_binary_image);
 	ClassDB::bind_method(D_METHOD("set_handle_binary_image", "method"), &GLTFState::set_handle_binary_image);
-	ClassDB::bind_method(D_METHOD("set_bake_fps", "value"), &GLTFState::set_bake_fps);
-	ClassDB::bind_method(D_METHOD("get_bake_fps"), &GLTFState::get_bake_fps);
 
 	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "json"), "set_json", "get_json"); // Dictionary
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "major_version"), "set_major_version", "get_major_version"); // int
@@ -109,30 +105,28 @@ void GLTFState::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "copyright"), "set_copyright", "get_copyright"); // String
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_BYTE_ARRAY, "glb_data"), "set_glb_data", "get_glb_data"); // Vector<uint8_t>
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_named_skin_binds"), "set_use_named_skin_binds", "get_use_named_skin_binds"); // bool
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "nodes", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_INTERNAL | PROPERTY_USAGE_EDITOR), "set_nodes", "get_nodes"); // Vector<Ref<GLTFNode>>
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "nodes", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE | PropertyUsageFlags::INTERNAL | PropertyUsageFlags::EDITOR), "set_nodes", "get_nodes"); // Vector<Ref<GLTFNode>>
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "buffers"), "set_buffers", "get_buffers"); // Vector<Vector<uint8_t>
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "buffer_views", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_INTERNAL | PROPERTY_USAGE_EDITOR), "set_buffer_views", "get_buffer_views"); // Vector<Ref<GLTFBufferView>>
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "accessors", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_INTERNAL | PROPERTY_USAGE_EDITOR), "set_accessors", "get_accessors"); // Vector<Ref<GLTFAccessor>>
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "meshes", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_INTERNAL | PROPERTY_USAGE_EDITOR), "set_meshes", "get_meshes"); // Vector<Ref<GLTFMesh>>
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "materials", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_INTERNAL | PROPERTY_USAGE_EDITOR), "set_materials", "get_materials"); // Vector<Ref<Material>
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "buffer_views", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE | PropertyUsageFlags::INTERNAL | PropertyUsageFlags::EDITOR), "set_buffer_views", "get_buffer_views"); // Vector<Ref<GLTFBufferView>>
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "accessors", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE | PropertyUsageFlags::INTERNAL | PropertyUsageFlags::EDITOR), "set_accessors", "get_accessors"); // Vector<Ref<GLTFAccessor>>
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "meshes", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE | PropertyUsageFlags::INTERNAL | PropertyUsageFlags::EDITOR), "set_meshes", "get_meshes"); // Vector<Ref<GLTFMesh>>
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "materials", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE | PropertyUsageFlags::INTERNAL | PropertyUsageFlags::EDITOR), "set_materials", "get_materials"); // Vector<Ref<Material>
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "scene_name"), "set_scene_name", "get_scene_name"); // String
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "base_path"), "set_base_path", "get_base_path"); // String
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "filename"), "set_filename", "get_filename"); // String
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT32_ARRAY, "root_nodes"), "set_root_nodes", "get_root_nodes"); // Vector<int>
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "textures", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_INTERNAL | PROPERTY_USAGE_EDITOR), "set_textures", "get_textures"); // Vector<Ref<GLTFTexture>>
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "texture_samplers", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_INTERNAL | PROPERTY_USAGE_EDITOR), "set_texture_samplers", "get_texture_samplers"); //Vector<Ref<GLTFTextureSampler>>
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "images", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_INTERNAL | PROPERTY_USAGE_EDITOR), "set_images", "get_images"); // Vector<Ref<Texture>
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "skins", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_INTERNAL | PROPERTY_USAGE_EDITOR), "set_skins", "get_skins"); // Vector<Ref<GLTFSkin>>
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "cameras", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_INTERNAL | PROPERTY_USAGE_EDITOR), "set_cameras", "get_cameras"); // Vector<Ref<GLTFCamera>>
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "lights", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_INTERNAL | PROPERTY_USAGE_EDITOR), "set_lights", "get_lights"); // Vector<Ref<GLTFLight>>
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "unique_names", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_INTERNAL | PROPERTY_USAGE_EDITOR), "set_unique_names", "get_unique_names"); // Set<String>
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "unique_animation_names", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_INTERNAL | PROPERTY_USAGE_EDITOR), "set_unique_animation_names", "get_unique_animation_names"); // Set<String>
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "skeletons", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_INTERNAL | PROPERTY_USAGE_EDITOR), "set_skeletons", "get_skeletons"); // Vector<Ref<GLTFSkeleton>>
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "textures", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE | PropertyUsageFlags::INTERNAL | PropertyUsageFlags::EDITOR), "set_textures", "get_textures"); // Vector<Ref<GLTFTexture>>
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "texture_samplers", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE | PropertyUsageFlags::INTERNAL | PropertyUsageFlags::EDITOR), "set_texture_samplers", "get_texture_samplers"); //Vector<Ref<GLTFTextureSampler>>
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "images", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE | PropertyUsageFlags::INTERNAL | PropertyUsageFlags::EDITOR), "set_images", "get_images"); // Vector<Ref<Texture>
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "skins", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE | PropertyUsageFlags::INTERNAL | PropertyUsageFlags::EDITOR), "set_skins", "get_skins"); // Vector<Ref<GLTFSkin>>
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "cameras", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE | PropertyUsageFlags::INTERNAL | PropertyUsageFlags::EDITOR), "set_cameras", "get_cameras"); // Vector<Ref<GLTFCamera>>
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "lights", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE | PropertyUsageFlags::INTERNAL | PropertyUsageFlags::EDITOR), "set_lights", "get_lights"); // Vector<Ref<GLTFLight>>
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "unique_names", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE | PropertyUsageFlags::INTERNAL | PropertyUsageFlags::EDITOR), "set_unique_names", "get_unique_names"); // Set<String>
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "unique_animation_names", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE | PropertyUsageFlags::INTERNAL | PropertyUsageFlags::EDITOR), "set_unique_animation_names", "get_unique_animation_names"); // Set<String>
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "skeletons", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE | PropertyUsageFlags::INTERNAL | PropertyUsageFlags::EDITOR), "set_skeletons", "get_skeletons"); // Vector<Ref<GLTFSkeleton>>
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "create_animations"), "set_create_animations", "get_create_animations"); // bool
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "import_as_skeleton_bones"), "set_import_as_skeleton_bones", "get_import_as_skeleton_bones"); // bool
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "animations", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_INTERNAL | PROPERTY_USAGE_EDITOR), "set_animations", "get_animations"); // Vector<Ref<GLTFAnimation>>
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "handle_binary_image", PROPERTY_HINT_ENUM, "Discard All Textures,Extract Textures,Embed as Basis Universal,Embed as Uncompressed", PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_INTERNAL | PROPERTY_USAGE_EDITOR), "set_handle_binary_image", "get_handle_binary_image"); // enum
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "bake_fps"), "set_bake_fps", "get_bake_fps");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "animations", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE | PropertyUsageFlags::INTERNAL | PropertyUsageFlags::EDITOR), "set_animations", "get_animations"); // Vector<Ref<GLTFAnimation>>
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "handle_binary_image", PropertyHint::ENUM, "Discard All Textures,Extract Textures,Embed as Basis Universal,Embed as Uncompressed", PropertyUsageFlags::STORAGE | PropertyUsageFlags::INTERNAL | PropertyUsageFlags::EDITOR), "set_handle_binary_image", "get_handle_binary_image"); // enum
 
 	BIND_CONSTANT(HANDLE_BINARY_DISCARD_TEXTURES);
 	BIND_CONSTANT(HANDLE_BINARY_EXTRACT_TEXTURES);
@@ -341,14 +335,6 @@ bool GLTFState::get_create_animations() {
 
 void GLTFState::set_create_animations(bool p_create_animations) {
 	create_animations = p_create_animations;
-}
-
-bool GLTFState::get_import_as_skeleton_bones() {
-	return import_as_skeleton_bones;
-}
-
-void GLTFState::set_import_as_skeleton_bones(bool p_import_as_skeleton_bones) {
-	import_as_skeleton_bones = p_import_as_skeleton_bones;
 }
 
 TypedArray<GLTFAnimation> GLTFState::get_animations() {

@@ -33,17 +33,12 @@
 #include "animation_blend_tree.h"
 
 void AnimationNodeBlendSpace1D::get_parameter_list(List<PropertyInfo> *r_list) const {
-	AnimationNode::get_parameter_list(r_list);
 	r_list->push_back(PropertyInfo(Variant::FLOAT, blend_position));
-	r_list->push_back(PropertyInfo(Variant::INT, closest, PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NONE));
+	r_list->push_back(PropertyInfo(Variant::INT, closest, PropertyHint::NONE, "", PropertyUsageFlags::NONE));
+	r_list->push_back(PropertyInfo(Variant::FLOAT, length_internal, PropertyHint::NONE, "", PropertyUsageFlags::NONE));
 }
 
 Variant AnimationNodeBlendSpace1D::get_parameter_default_value(const StringName &p_parameter) const {
-	Variant ret = AnimationNode::get_parameter_default_value(p_parameter);
-	if (ret != Variant()) {
-		return ret;
-	}
-
 	if (p_parameter == closest) {
 		return -1;
 	} else {
@@ -60,7 +55,7 @@ void AnimationNodeBlendSpace1D::_validate_property(PropertyInfo &p_property) con
 		String left = p_property.name.get_slicec('/', 0);
 		int idx = left.get_slicec('_', 2).to_int();
 		if (idx >= blend_points_used) {
-			p_property.usage = PROPERTY_USAGE_NONE;
+			p_property.usage = PropertyUsageFlags::NONE;
 		}
 	}
 }
@@ -107,16 +102,16 @@ void AnimationNodeBlendSpace1D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_add_blend_point", "index", "node"), &AnimationNodeBlendSpace1D::_add_blend_point);
 
 	for (int i = 0; i < MAX_BLEND_POINTS; i++) {
-		ADD_PROPERTYI(PropertyInfo(Variant::OBJECT, "blend_point_" + itos(i) + "/node", PROPERTY_HINT_RESOURCE_TYPE, "AnimationRootNode", PROPERTY_USAGE_NO_EDITOR | PROPERTY_USAGE_INTERNAL), "_add_blend_point", "get_blend_point_node", i);
-		ADD_PROPERTYI(PropertyInfo(Variant::FLOAT, "blend_point_" + itos(i) + "/pos", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR | PROPERTY_USAGE_INTERNAL), "set_blend_point_position", "get_blend_point_position", i);
+		ADD_PROPERTYI(PropertyInfo(Variant::OBJECT, "blend_point_" + itos(i) + "/node", PropertyHint::RESOURCE_TYPE, "AnimationRootNode", PropertyUsageFlags::NO_EDITOR | PropertyUsageFlags::INTERNAL), "_add_blend_point", "get_blend_point_node", i);
+		ADD_PROPERTYI(PropertyInfo(Variant::FLOAT, "blend_point_" + itos(i) + "/pos", PropertyHint::NONE, "", PropertyUsageFlags::NO_EDITOR | PropertyUsageFlags::INTERNAL), "set_blend_point_position", "get_blend_point_position", i);
 	}
 
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "min_space", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR), "set_min_space", "get_min_space");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "max_space", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR), "set_max_space", "get_max_space");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "snap", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR), "set_snap", "get_snap");
-	ADD_PROPERTY(PropertyInfo(Variant::STRING, "value_label", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR), "set_value_label", "get_value_label");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "blend_mode", PROPERTY_HINT_ENUM, "Interpolated,Discrete,Carry", PROPERTY_USAGE_NO_EDITOR), "set_blend_mode", "get_blend_mode");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "sync", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR), "set_use_sync", "is_using_sync");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "min_space", PropertyHint::NONE, "", PropertyUsageFlags::NO_EDITOR), "set_min_space", "get_min_space");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "max_space", PropertyHint::NONE, "", PropertyUsageFlags::NO_EDITOR), "set_max_space", "get_max_space");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "snap", PropertyHint::NONE, "", PropertyUsageFlags::NO_EDITOR), "set_snap", "get_snap");
+	ADD_PROPERTY(PropertyInfo(Variant::STRING, "value_label", PropertyHint::NONE, "", PropertyUsageFlags::NO_EDITOR), "set_value_label", "get_value_label");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "blend_mode", PropertyHint::ENUM, "Interpolated,Discrete,Carry", PropertyUsageFlags::NO_EDITOR), "set_blend_mode", "get_blend_mode");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "sync", PropertyHint::NONE, "", PropertyUsageFlags::NO_EDITOR), "set_use_sync", "is_using_sync");
 
 	BIND_ENUM_CONSTANT(BLEND_MODE_INTERPOLATED);
 	BIND_ENUM_CONSTANT(BLEND_MODE_DISCRETE);
@@ -277,9 +272,9 @@ void AnimationNodeBlendSpace1D::_add_blend_point(int p_index, const Ref<Animatio
 	}
 }
 
-AnimationNode::NodeTimeInfo AnimationNodeBlendSpace1D::_process(const AnimationMixer::PlaybackInfo p_playback_info, bool p_test_only) {
+double AnimationNodeBlendSpace1D::_process(const AnimationMixer::PlaybackInfo p_playback_info, bool p_test_only) {
 	if (blend_points_used == 0) {
-		return NodeTimeInfo();
+		return 0.0;
 	}
 
 	AnimationMixer::PlaybackInfo pi = p_playback_info;
@@ -292,7 +287,8 @@ AnimationNode::NodeTimeInfo AnimationNodeBlendSpace1D::_process(const AnimationM
 
 	double blend_pos = get_parameter(blend_position);
 	int cur_closest = get_parameter(closest);
-	NodeTimeInfo mind;
+	double cur_length_internal = get_parameter(length_internal);
+	double max_time_remaining = 0.0;
 
 	if (blend_mode == BLEND_MODE_INTERPOLATED) {
 		int point_lower = -1;
@@ -345,17 +341,12 @@ AnimationNode::NodeTimeInfo AnimationNodeBlendSpace1D::_process(const AnimationM
 		}
 
 		// actually blend the animations now
-		bool first = true;
-		double max_weight = 0.0;
+
 		for (int i = 0; i < blend_points_used; i++) {
 			if (i == point_lower || i == point_higher) {
 				pi.weight = weights[i];
-				NodeTimeInfo t = blend_node(blend_points[i].node, blend_points[i].name, pi, FILTER_IGNORE, true, p_test_only);
-				if (first || pi.weight > max_weight) {
-					max_weight = pi.weight;
-					mind = t;
-					first = false;
-				}
+				double remaining = blend_node(blend_points[i].node, blend_points[i].name, pi, FILTER_IGNORE, true, p_test_only);
+				max_time_remaining = MAX(max_time_remaining, remaining);
 			} else if (sync) {
 				pi.weight = 0;
 				blend_node(blend_points[i].node, blend_points[i].name, pi, FILTER_IGNORE, true, p_test_only);
@@ -374,7 +365,7 @@ AnimationNode::NodeTimeInfo AnimationNodeBlendSpace1D::_process(const AnimationM
 		}
 
 		if (new_closest != cur_closest && new_closest != -1) {
-			NodeTimeInfo from;
+			double from = 0.0;
 			if (blend_mode == BLEND_MODE_DISCRETE_CARRY && cur_closest != -1) {
 				//for ping-pong loop
 				Ref<AnimationNodeAnimation> na_c = static_cast<Ref<AnimationNodeAnimation>>(blend_points[cur_closest].node);
@@ -385,17 +376,18 @@ AnimationNode::NodeTimeInfo AnimationNodeBlendSpace1D::_process(const AnimationM
 				//see how much animation remains
 				pi.seeked = false;
 				pi.weight = 0;
-				from = blend_node(blend_points[cur_closest].node, blend_points[cur_closest].name, pi, FILTER_IGNORE, true, p_test_only);
+				from = cur_length_internal - blend_node(blend_points[cur_closest].node, blend_points[cur_closest].name, pi, FILTER_IGNORE, true, p_test_only);
 			}
 
-			pi.time = from.position;
+			pi.time = from;
 			pi.seeked = true;
 			pi.weight = 1.0;
-			mind = blend_node(blend_points[new_closest].node, blend_points[new_closest].name, pi, FILTER_IGNORE, true, p_test_only);
+			max_time_remaining = blend_node(blend_points[new_closest].node, blend_points[new_closest].name, pi, FILTER_IGNORE, true, p_test_only);
+			cur_length_internal = from + max_time_remaining;
 			cur_closest = new_closest;
 		} else {
 			pi.weight = 1.0;
-			mind = blend_node(blend_points[cur_closest].node, blend_points[cur_closest].name, pi, FILTER_IGNORE, true, p_test_only);
+			max_time_remaining = blend_node(blend_points[cur_closest].node, blend_points[cur_closest].name, pi, FILTER_IGNORE, true, p_test_only);
 		}
 
 		if (sync) {
@@ -410,7 +402,8 @@ AnimationNode::NodeTimeInfo AnimationNodeBlendSpace1D::_process(const AnimationM
 	}
 
 	set_parameter(closest, cur_closest);
-	return mind;
+	set_parameter(length_internal, cur_length_internal);
+	return max_time_remaining;
 }
 
 String AnimationNodeBlendSpace1D::get_caption() const {

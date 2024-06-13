@@ -106,32 +106,31 @@ String ResourceImporterDynamicFont::get_preset_name(int p_idx) const {
 void ResourceImporterDynamicFont::get_import_options(const String &p_path, List<ImportOption> *r_options, int p_preset) const {
 	bool msdf = p_preset == PRESET_MSDF;
 
-	r_options->push_back(ImportOption(PropertyInfo(Variant::NIL, "Rendering", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_GROUP), Variant()));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::NIL, "Rendering", PropertyHint::NONE, "", PropertyUsageFlags::GROUP), Variant()));
 
-	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "antialiasing", PROPERTY_HINT_ENUM, "None,Grayscale,LCD Subpixel"), 1));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "antialiasing", PropertyHint::ENUM, "None,Grayscale,LCD Subpixel"), 1));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "generate_mipmaps"), false));
-	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "disable_embedded_bitmaps"), true));
-	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "multichannel_signed_distance_field", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_UPDATE_ALL_IF_MODIFIED), (msdf) ? true : false));
-	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "msdf_pixel_range", PROPERTY_HINT_RANGE, "1,100,1"), 8));
-	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "msdf_size", PROPERTY_HINT_RANGE, "1,250,1"), 48));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "multichannel_signed_distance_field", PropertyHint::NONE, "", PropertyUsageFlags::DEFAULT | PropertyUsageFlags::UPDATE_ALL_IF_MODIFIED), (msdf) ? true : false));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "msdf_pixel_range", PropertyHint::RANGE, "1,100,1"), 8));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "msdf_size", PropertyHint::RANGE, "1,250,1"), 48));
 
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "allow_system_fallback"), true));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "force_autohinter"), false));
-	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "hinting", PROPERTY_HINT_ENUM, "None,Light,Normal"), 1));
-	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "subpixel_positioning", PROPERTY_HINT_ENUM, "Disabled,Auto,One Half of a Pixel,One Quarter of a Pixel"), 1));
-	r_options->push_back(ImportOption(PropertyInfo(Variant::FLOAT, "oversampling", PROPERTY_HINT_RANGE, "0,10,0.1"), 0.0));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "hinting", PropertyHint::ENUM, "None,Light,Normal"), 1));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "subpixel_positioning", PropertyHint::ENUM, "Disabled,Auto,One Half of a Pixel,One Quarter of a Pixel"), 1));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::FLOAT, "oversampling", PropertyHint::RANGE, "0,10,0.1"), 0.0));
 
-	r_options->push_back(ImportOption(PropertyInfo(Variant::NIL, "Fallbacks", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_GROUP), Variant()));
-	r_options->push_back(ImportOption(PropertyInfo(Variant::ARRAY, "fallbacks", PROPERTY_HINT_ARRAY_TYPE, MAKE_RESOURCE_TYPE_HINT("Font")), Array()));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::NIL, "Fallbacks", PropertyHint::NONE, "", PropertyUsageFlags::GROUP), Variant()));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::ARRAY, "fallbacks", PropertyHint::ARRAY_TYPE, MAKE_RESOURCE_TYPE_HINT("Font")), Array()));
 
-	r_options->push_back(ImportOption(PropertyInfo(Variant::NIL, "Compress", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_GROUP), Variant()));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::NIL, "Compress", PropertyHint::NONE, "", PropertyUsageFlags::GROUP), Variant()));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "compress"), true));
 
 	// Hide from the main UI, only for advanced import dialog.
-	r_options->push_back(ImportOption(PropertyInfo(Variant::ARRAY, "preload", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), Array()));
-	r_options->push_back(ImportOption(PropertyInfo(Variant::DICTIONARY, "language_support", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), Dictionary()));
-	r_options->push_back(ImportOption(PropertyInfo(Variant::DICTIONARY, "script_support", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), Dictionary()));
-	r_options->push_back(ImportOption(PropertyInfo(Variant::DICTIONARY, "opentype_features", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), Dictionary()));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::ARRAY, "preload", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE), Array()));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::DICTIONARY, "language_support", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE), Dictionary()));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::DICTIONARY, "script_support", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE), Dictionary()));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::DICTIONARY, "opentype_features", PropertyHint::NONE, "", PropertyUsageFlags::STORAGE), Dictionary()));
 }
 
 bool ResourceImporterDynamicFont::has_advanced_options() const {
@@ -146,7 +145,6 @@ Error ResourceImporterDynamicFont::import(const String &p_source_file, const Str
 
 	int antialiasing = p_options["antialiasing"];
 	bool generate_mipmaps = p_options["generate_mipmaps"];
-	bool disable_embedded_bitmaps = p_options["disable_embedded_bitmaps"];
 	bool msdf = p_options["multichannel_signed_distance_field"];
 	int px_range = p_options["msdf_pixel_range"];
 	int px_size = p_options["msdf_size"];
@@ -167,7 +165,6 @@ Error ResourceImporterDynamicFont::import(const String &p_source_file, const Str
 	font.instantiate();
 	font->set_data(data);
 	font->set_antialiasing((TextServer::FontAntialiasing)antialiasing);
-	font->set_disable_embedded_bitmaps(disable_embedded_bitmaps);
 	font->set_generate_mipmaps(generate_mipmaps);
 	font->set_multichannel_signed_distance_field(msdf);
 	font->set_msdf_pixel_range(px_range);

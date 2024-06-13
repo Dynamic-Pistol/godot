@@ -33,37 +33,33 @@
 String DocData::get_default_value_string(const Variant &p_value) {
 	if (p_value.get_type() == Variant::ARRAY) {
 		return Variant(Array(p_value, 0, StringName(), Variant())).get_construct_string().replace("\n", " ");
-	} else if (p_value.get_type() == Variant::DICTIONARY) {
-		return Variant(Dictionary(p_value, 0, StringName(), Variant(), 0, StringName(), Variant())).get_construct_string().replace("\n", " ");
 	} else {
 		return p_value.get_construct_string().replace("\n", " ");
 	}
 }
 
 void DocData::return_doc_from_retinfo(DocData::MethodDoc &p_method, const PropertyInfo &p_retinfo) {
-	if (p_retinfo.type == Variant::INT && p_retinfo.hint == PROPERTY_HINT_INT_IS_POINTER) {
+	if (p_retinfo.type == Variant::INT && p_retinfo.hint == PropertyHint::INT_IS_POINTER) {
 		p_method.return_type = p_retinfo.hint_string;
 		if (p_method.return_type.is_empty()) {
 			p_method.return_type = "void*";
 		} else {
 			p_method.return_type += "*";
 		}
-	} else if (p_retinfo.type == Variant::INT && p_retinfo.usage & (PROPERTY_USAGE_CLASS_IS_ENUM | PROPERTY_USAGE_CLASS_IS_BITFIELD)) {
+	} else if (p_retinfo.type == Variant::INT && p_retinfo.usage & (PropertyUsageFlags::CLASS_IS_ENUM | PropertyUsageFlags::CLASS_IS_BITFIELD)) {
 		p_method.return_enum = p_retinfo.class_name;
 		if (p_method.return_enum.begins_with("_")) { //proxy class
 			p_method.return_enum = p_method.return_enum.substr(1, p_method.return_enum.length());
 		}
-		p_method.return_is_bitfield = p_retinfo.usage & PROPERTY_USAGE_CLASS_IS_BITFIELD;
+		p_method.return_is_bitfield = p_retinfo.usage & PropertyUsageFlags::CLASS_IS_BITFIELD;
 		p_method.return_type = "int";
 	} else if (p_retinfo.class_name != StringName()) {
 		p_method.return_type = p_retinfo.class_name;
-	} else if (p_retinfo.type == Variant::ARRAY && p_retinfo.hint == PROPERTY_HINT_ARRAY_TYPE) {
+	} else if (p_retinfo.type == Variant::ARRAY && p_retinfo.hint == PropertyHint::ARRAY_TYPE) {
 		p_method.return_type = p_retinfo.hint_string + "[]";
-	} else if (p_retinfo.type == Variant::DICTIONARY && p_retinfo.hint == PROPERTY_HINT_DICTIONARY_TYPE) {
-		p_method.return_type = "Dictionary[" + p_retinfo.hint_string + "]";
-	} else if (p_retinfo.hint == PROPERTY_HINT_RESOURCE_TYPE) {
+	} else if (p_retinfo.hint == PropertyHint::RESOURCE_TYPE) {
 		p_method.return_type = p_retinfo.hint_string;
-	} else if (p_retinfo.type == Variant::NIL && p_retinfo.usage & PROPERTY_USAGE_NIL_IS_VARIANT) {
+	} else if (p_retinfo.type == Variant::NIL && p_retinfo.usage & PropertyUsageFlags::NIL_IS_VARIANT) {
 		p_method.return_type = "Variant";
 	} else if (p_retinfo.type == Variant::NIL) {
 		p_method.return_type = "void";
@@ -75,30 +71,28 @@ void DocData::return_doc_from_retinfo(DocData::MethodDoc &p_method, const Proper
 void DocData::argument_doc_from_arginfo(DocData::ArgumentDoc &p_argument, const PropertyInfo &p_arginfo) {
 	p_argument.name = p_arginfo.name;
 
-	if (p_arginfo.type == Variant::INT && p_arginfo.hint == PROPERTY_HINT_INT_IS_POINTER) {
+	if (p_arginfo.type == Variant::INT && p_arginfo.hint == PropertyHint::INT_IS_POINTER) {
 		p_argument.type = p_arginfo.hint_string;
 		if (p_argument.type.is_empty()) {
 			p_argument.type = "void*";
 		} else {
 			p_argument.type += "*";
 		}
-	} else if (p_arginfo.type == Variant::INT && p_arginfo.usage & (PROPERTY_USAGE_CLASS_IS_ENUM | PROPERTY_USAGE_CLASS_IS_BITFIELD)) {
+	} else if (p_arginfo.type == Variant::INT && p_arginfo.usage & (PropertyUsageFlags::CLASS_IS_ENUM | PropertyUsageFlags::CLASS_IS_BITFIELD)) {
 		p_argument.enumeration = p_arginfo.class_name;
 		if (p_argument.enumeration.begins_with("_")) { //proxy class
 			p_argument.enumeration = p_argument.enumeration.substr(1, p_argument.enumeration.length());
 		}
-		p_argument.is_bitfield = p_arginfo.usage & PROPERTY_USAGE_CLASS_IS_BITFIELD;
+		p_argument.is_bitfield = p_arginfo.usage & PropertyUsageFlags::CLASS_IS_BITFIELD;
 		p_argument.type = "int";
 	} else if (p_arginfo.class_name != StringName()) {
 		p_argument.type = p_arginfo.class_name;
-	} else if (p_arginfo.type == Variant::ARRAY && p_arginfo.hint == PROPERTY_HINT_ARRAY_TYPE) {
+	} else if (p_arginfo.type == Variant::ARRAY && p_arginfo.hint == PropertyHint::ARRAY_TYPE) {
 		p_argument.type = p_arginfo.hint_string + "[]";
-	} else if (p_arginfo.type == Variant::DICTIONARY && p_arginfo.hint == PROPERTY_HINT_DICTIONARY_TYPE) {
-		p_argument.type = "Dictionary[" + p_arginfo.hint_string + "]";
-	} else if (p_arginfo.hint == PROPERTY_HINT_RESOURCE_TYPE) {
+	} else if (p_arginfo.hint == PropertyHint::RESOURCE_TYPE) {
 		p_argument.type = p_arginfo.hint_string;
 	} else if (p_arginfo.type == Variant::NIL) {
-		// Parameters cannot be void, so PROPERTY_USAGE_NIL_IS_VARIANT is not necessary
+		// Parameters cannot be void, so PropertyUsageFlags::NIL_IS_VARIANT is not necessary
 		p_argument.type = "Variant";
 	} else {
 		p_argument.type = Variant::get_type_name(p_arginfo.type);
@@ -111,7 +105,7 @@ void DocData::property_doc_from_scriptmemberinfo(DocData::PropertyDoc &p_propert
 
 	if (p_memberinfo.propinfo.type == Variant::OBJECT) {
 		p_property.type = p_memberinfo.propinfo.class_name;
-	} else if (p_memberinfo.propinfo.type == Variant::NIL && p_memberinfo.propinfo.usage & PROPERTY_USAGE_NIL_IS_VARIANT) {
+	} else if (p_memberinfo.propinfo.type == Variant::NIL && p_memberinfo.propinfo.usage & PropertyUsageFlags::NIL_IS_VARIANT) {
 		p_property.type = "Variant";
 	} else {
 		p_property.type = Variant::get_type_name(p_memberinfo.propinfo.type);
@@ -131,25 +125,25 @@ void DocData::method_doc_from_methodinfo(DocData::MethodDoc &p_method, const Met
 	p_method.name = p_methodinfo.name;
 	p_method.description = p_desc;
 
-	if (p_methodinfo.flags & METHOD_FLAG_VIRTUAL) {
+	if (p_methodinfo.flags & MethodFlags::VIRTUAL) {
 		p_method.qualifiers = "virtual";
 	}
 
-	if (p_methodinfo.flags & METHOD_FLAG_CONST) {
+	if (p_methodinfo.flags & MethodFlags::CONST) {
 		if (!p_method.qualifiers.is_empty()) {
 			p_method.qualifiers += " ";
 		}
 		p_method.qualifiers += "const";
 	}
 
-	if (p_methodinfo.flags & METHOD_FLAG_VARARG) {
+	if (p_methodinfo.flags & MethodFlags::VARARG) {
 		if (!p_method.qualifiers.is_empty()) {
 			p_method.qualifiers += " ";
 		}
 		p_method.qualifiers += "vararg";
 	}
 
-	if (p_methodinfo.flags & METHOD_FLAG_STATIC) {
+	if (p_methodinfo.flags & MethodFlags::STATIC) {
 		if (!p_method.qualifiers.is_empty()) {
 			p_method.qualifiers += " ";
 		}
@@ -158,10 +152,9 @@ void DocData::method_doc_from_methodinfo(DocData::MethodDoc &p_method, const Met
 
 	return_doc_from_retinfo(p_method, p_methodinfo.return_val);
 
-	int i = 0;
-	for (List<PropertyInfo>::ConstIterator itr = p_methodinfo.arguments.begin(); itr != p_methodinfo.arguments.end(); ++itr, ++i) {
+	for (int i = 0; i < p_methodinfo.arguments.size(); i++) {
 		DocData::ArgumentDoc argument;
-		argument_doc_from_arginfo(argument, *itr);
+		argument_doc_from_arginfo(argument, p_methodinfo.arguments[i]);
 		int default_arg_index = i - (p_methodinfo.arguments.size() - p_methodinfo.default_arguments.size());
 		if (default_arg_index >= 0) {
 			Variant default_arg = p_methodinfo.default_arguments[default_arg_index];

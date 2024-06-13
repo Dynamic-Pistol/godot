@@ -464,8 +464,6 @@ void DynamicFontImportSettingsDialog::_main_prop_changed(const String &p_edited_
 			font_preview->set_antialiasing((TextServer::FontAntialiasing)import_settings_data->get("antialiasing").operator int());
 		} else if (p_edited_property == "generate_mipmaps") {
 			font_preview->set_generate_mipmaps(import_settings_data->get("generate_mipmaps"));
-		} else if (p_edited_property == "disable_embedded_bitmaps") {
-			font_preview->set_disable_embedded_bitmaps(import_settings_data->get("disable_embedded_bitmaps"));
 		} else if (p_edited_property == "multichannel_signed_distance_field") {
 			font_preview->set_multichannel_signed_distance_field(import_settings_data->get("multichannel_signed_distance_field"));
 			_variation_selected();
@@ -940,7 +938,6 @@ void DynamicFontImportSettingsDialog::_re_import() {
 	main_settings["face_index"] = import_settings_data->get("face_index");
 	main_settings["antialiasing"] = import_settings_data->get("antialiasing");
 	main_settings["generate_mipmaps"] = import_settings_data->get("generate_mipmaps");
-	main_settings["disable_embedded_bitmaps"] = import_settings_data->get("disable_embedded_bitmaps");
 	main_settings["multichannel_signed_distance_field"] = import_settings_data->get("multichannel_signed_distance_field");
 	main_settings["msdf_pixel_range"] = import_settings_data->get("msdf_pixel_range");
 	main_settings["msdf_size"] = import_settings_data->get("msdf_size");
@@ -1244,39 +1241,38 @@ DynamicFontImportSettingsDialog *DynamicFontImportSettingsDialog::get_singleton(
 DynamicFontImportSettingsDialog::DynamicFontImportSettingsDialog() {
 	singleton = this;
 
-	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::NIL, "Rendering", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_GROUP), Variant()));
+	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::NIL, "Rendering", PropertyHint::NONE, "", PropertyUsageFlags::GROUP), Variant()));
 
-	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::INT, "antialiasing", PROPERTY_HINT_ENUM, "None,Grayscale,LCD Subpixel"), 1));
+	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::INT, "antialiasing", PropertyHint::ENUM, "None,Grayscale,LCD Subpixel"), 1));
 	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::BOOL, "generate_mipmaps"), false));
-	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::BOOL, "disable_embedded_bitmaps"), true));
-	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::BOOL, "multichannel_signed_distance_field", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_UPDATE_ALL_IF_MODIFIED), true));
-	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::INT, "msdf_pixel_range", PROPERTY_HINT_RANGE, "1,100,1"), 8));
-	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::INT, "msdf_size", PROPERTY_HINT_RANGE, "1,250,1"), 48));
+	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::BOOL, "multichannel_signed_distance_field", PropertyHint::NONE, "", PropertyUsageFlags::DEFAULT | PropertyUsageFlags::UPDATE_ALL_IF_MODIFIED), true));
+	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::INT, "msdf_pixel_range", PropertyHint::RANGE, "1,100,1"), 8));
+	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::INT, "msdf_size", PropertyHint::RANGE, "1,250,1"), 48));
 	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::BOOL, "allow_system_fallback"), true));
 	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::BOOL, "force_autohinter"), false));
-	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::INT, "hinting", PROPERTY_HINT_ENUM, "None,Light,Normal"), 1));
-	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::INT, "subpixel_positioning", PROPERTY_HINT_ENUM, "Disabled,Auto,One Half of a Pixel,One Quarter of a Pixel"), 1));
-	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::FLOAT, "oversampling", PROPERTY_HINT_RANGE, "0,10,0.1"), 0.0));
+	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::INT, "hinting", PropertyHint::ENUM, "None,Light,Normal"), 1));
+	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::INT, "subpixel_positioning", PropertyHint::ENUM, "Disabled,Auto,One Half of a Pixel,One Quarter of a Pixel"), 1));
+	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::FLOAT, "oversampling", PropertyHint::RANGE, "0,10,0.1"), 0.0));
 
-	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::NIL, "Metadata Overrides", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_GROUP), Variant()));
+	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::NIL, "Metadata Overrides", PropertyHint::NONE, "", PropertyUsageFlags::GROUP), Variant()));
 	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::DICTIONARY, "language_support"), Dictionary()));
 	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::DICTIONARY, "script_support"), Dictionary()));
 	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::DICTIONARY, "opentype_features"), Dictionary()));
 
-	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::NIL, "Fallbacks", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_GROUP), Variant()));
-	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::ARRAY, "fallbacks", PROPERTY_HINT_ARRAY_TYPE, MAKE_RESOURCE_TYPE_HINT("Font")), Array()));
+	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::NIL, "Fallbacks", PropertyHint::NONE, "", PropertyUsageFlags::GROUP), Variant()));
+	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::ARRAY, "fallbacks", PropertyHint::ARRAY_TYPE, MAKE_RESOURCE_TYPE_HINT("Font")), Array()));
 
-	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::NIL, "Compress", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_GROUP), Variant()));
-	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::BOOL, "compress", PROPERTY_HINT_NONE, ""), false));
+	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::NIL, "Compress", PropertyHint::NONE, "", PropertyUsageFlags::GROUP), Variant()));
+	options_general.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::BOOL, "compress", PropertyHint::NONE, ""), false));
 
 	options_text.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::DICTIONARY, "opentype_features"), Dictionary()));
-	options_text.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::STRING, "language", PROPERTY_HINT_LOCALE_ID, ""), ""));
+	options_text.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::STRING, "language", PropertyHint::LOCALE_ID, ""), ""));
 
-	options_variations.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::INT, "size", PROPERTY_HINT_RANGE, "0,127,1"), 16));
-	options_variations.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::INT, "outline_size", PROPERTY_HINT_RANGE, "0,127,1"), 0));
-	options_variations.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::NIL, "Variation", PROPERTY_HINT_NONE, "variation", PROPERTY_USAGE_GROUP), Variant()));
+	options_variations.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::INT, "size", PropertyHint::RANGE, "0,127,1"), 16));
+	options_variations.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::INT, "outline_size", PropertyHint::RANGE, "0,127,1"), 0));
+	options_variations.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::NIL, "Variation", PropertyHint::NONE, "variation", PropertyUsageFlags::GROUP), Variant()));
 	options_variations.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::DICTIONARY, "variation_opentype"), Dictionary()));
-	options_variations.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::FLOAT, "variation_embolden", PROPERTY_HINT_RANGE, "-2,2,0.01"), 0));
+	options_variations.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::FLOAT, "variation_embolden", PropertyHint::RANGE, "-2,2,0.01"), 0));
 	options_variations.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::INT, "variation_face_index"), 0));
 	options_variations.push_back(ResourceImporter::ImportOption(PropertyInfo(Variant::TRANSFORM2D, "variation_transform"), Transform2D()));
 
@@ -1372,10 +1368,9 @@ DynamicFontImportSettingsDialog::DynamicFontImportSettingsDialog() {
 	add_var = memnew(Button);
 	add_var->set_tooltip_text(TTR("Add configuration"));
 	page2_hb_vars->add_child(add_var);
-	add_var->connect(SceneStringName(pressed), callable_mp(this, &DynamicFontImportSettingsDialog::_variation_add));
+	add_var->connect("pressed", callable_mp(this, &DynamicFontImportSettingsDialog::_variation_add));
 
 	vars_list = memnew(Tree);
-	vars_list->set_auto_translate_mode(AUTO_TRANSLATE_MODE_DISABLED);
 	vars_list->set_custom_minimum_size(Size2(300 * EDSCALE, 0));
 	vars_list->set_hide_root(true);
 	vars_list->set_columns(2);
@@ -1414,7 +1409,7 @@ DynamicFontImportSettingsDialog::DynamicFontImportSettingsDialog() {
 	Button *btn_clear = memnew(Button);
 	btn_clear->set_text(TTR("Clear Glyph List"));
 	gl_hb->add_child(btn_clear);
-	btn_clear->connect(SceneStringName(pressed), callable_mp(this, &DynamicFontImportSettingsDialog::_glyph_clear));
+	btn_clear->connect("pressed", callable_mp(this, &DynamicFontImportSettingsDialog::_glyph_clear));
 
 	VBoxContainer *page2_0_vb = memnew(VBoxContainer);
 	page2_0_vb->set_name(TTR("Glyphs from the Translations"));
@@ -1428,7 +1423,6 @@ DynamicFontImportSettingsDialog::DynamicFontImportSettingsDialog() {
 	page2_0_vb->add_child(page2_0_description);
 
 	locale_tree = memnew(Tree);
-	locale_tree->set_auto_translate_mode(AUTO_TRANSLATE_MODE_DISABLED);
 	locale_tree->set_columns(1);
 	locale_tree->set_hide_root(true);
 	locale_tree->set_column_expand(0, true);
@@ -1446,7 +1440,7 @@ DynamicFontImportSettingsDialog::DynamicFontImportSettingsDialog() {
 	btn_fill_locales = memnew(Button);
 	btn_fill_locales->set_text(TTR("Shape all Strings in the Translations and Add Glyphs"));
 	locale_hb->add_child(btn_fill_locales);
-	btn_fill_locales->connect(SceneStringName(pressed), callable_mp(this, &DynamicFontImportSettingsDialog::_process_locales));
+	btn_fill_locales->connect("pressed", callable_mp(this, &DynamicFontImportSettingsDialog::_process_locales));
 
 	// Page 2.1 layout: Text to select glyphs
 	VBoxContainer *page2_1_vb = memnew(VBoxContainer);
@@ -1484,7 +1478,7 @@ DynamicFontImportSettingsDialog::DynamicFontImportSettingsDialog() {
 	btn_fill = memnew(Button);
 	btn_fill->set_text(TTR("Shape Text and Add Glyphs"));
 	text_hb->add_child(btn_fill);
-	btn_fill->connect(SceneStringName(pressed), callable_mp(this, &DynamicFontImportSettingsDialog::_glyph_text_selected));
+	btn_fill->connect("pressed", callable_mp(this, &DynamicFontImportSettingsDialog::_glyph_text_selected));
 
 	// Page 2.2 layout: Character map
 	VBoxContainer *page2_2_vb = memnew(VBoxContainer);
@@ -1504,7 +1498,6 @@ DynamicFontImportSettingsDialog::DynamicFontImportSettingsDialog() {
 	page2_2_vb->add_child(glyphs_split);
 
 	glyph_table = memnew(Tree);
-	glyph_table->set_auto_translate_mode(AUTO_TRANSLATE_MODE_DISABLED);
 	glyph_table->set_custom_minimum_size(Size2((30 * 16 + 100) * EDSCALE, 0));
 	glyph_table->set_columns(17);
 	glyph_table->set_column_expand(0, false);
@@ -1515,8 +1508,8 @@ DynamicFontImportSettingsDialog::DynamicFontImportSettingsDialog() {
 	for (int i = 0; i < 16; i++) {
 		glyph_table->set_column_title(i + 1, String::num_int64(i, 16));
 	}
-	glyph_table->add_theme_style_override("selected", glyph_table->get_theme_stylebox(SceneStringName(panel)));
-	glyph_table->add_theme_style_override("selected_focus", glyph_table->get_theme_stylebox(SceneStringName(panel)));
+	glyph_table->add_theme_style_override("selected", glyph_table->get_theme_stylebox(SNAME("panel")));
+	glyph_table->add_theme_style_override("selected_focus", glyph_table->get_theme_stylebox(SNAME("panel")));
 	glyph_table->add_theme_constant_override("h_separation", 0);
 	glyph_table->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	glyph_table->set_v_size_flags(Control::SIZE_EXPAND_FILL);
@@ -1524,7 +1517,6 @@ DynamicFontImportSettingsDialog::DynamicFontImportSettingsDialog() {
 	glyph_table->connect("item_activated", callable_mp(this, &DynamicFontImportSettingsDialog::_glyph_selected));
 
 	glyph_tree = memnew(Tree);
-	glyph_tree->set_auto_translate_mode(AUTO_TRANSLATE_MODE_DISABLED);
 	glyph_tree->set_custom_minimum_size(Size2(300 * EDSCALE, 0));
 	glyph_tree->set_columns(2);
 	glyph_tree->set_hide_root(true);

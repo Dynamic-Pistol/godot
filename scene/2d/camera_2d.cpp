@@ -54,55 +54,27 @@ void Camera2D::_update_scroll() {
 	if (is_current()) {
 		ERR_FAIL_COND(custom_viewport && !ObjectDB::get_instance(custom_viewport_id));
 
-		Size2 screen_size = _get_camera_screen_size();
-
-		Transform2D xform;
-		if (is_physics_interpolated_and_enabled()) {
-			xform = _interpolation_data.xform_prev.interpolate_with(_interpolation_data.xform_curr, Engine::get_singleton()->get_physics_interpolation_fraction());
-			camera_screen_center = xform.affine_inverse().xform(0.5 * screen_size);
-		} else {
-			xform = get_camera_transform();
-		}
+		Transform2D xform = get_camera_transform();
 
 		viewport->set_canvas_transform(xform);
 
+		Size2 screen_size = _get_camera_screen_size();
 		Point2 screen_offset = (anchor_mode == ANCHOR_MODE_DRAG_CENTER ? (screen_size * 0.5) : Point2());
-		Point2 adj_screen_pos = camera_screen_center - (screen_size * 0.5);
 
-		// TODO: Remove xform and screen_offset when ParallaxBackground/ParallaxLayer is removed.
-		get_tree()->call_group(group_name, SNAME("_camera_moved"), xform, screen_offset, adj_screen_pos);
-	}
+		get_tree()->call_group(group_name, "_camera_moved", xform, screen_offset);
+	};
 }
-
-#ifdef TOOLS_ENABLED
-void Camera2D::_project_settings_changed() {
-	if (screen_drawing_enabled) {
-		queue_redraw();
-	}
-}
-#endif
 
 void Camera2D::_update_process_callback() {
-	if (is_physics_interpolated_and_enabled()) {
-		set_process_internal(is_current());
-		set_physics_process_internal(is_current());
-
-#ifdef TOOLS_ENABLED
-		if (process_callback == CAMERA2D_PROCESS_IDLE) {
-			WARN_PRINT_ONCE("Camera2D overridden to physics process mode due to use of physics interpolation.");
-		}
-#endif
-	} else if (_is_editing_in_editor()) {
+	if (_is_editing_in_editor()) {
 		set_process_internal(false);
 		set_physics_process_internal(false);
+	} else if (process_callback == CAMERA2D_PROCESS_IDLE) {
+		set_process_internal(true);
+		set_physics_process_internal(false);
 	} else {
-		if (process_callback == CAMERA2D_PROCESS_IDLE) {
-			set_process_internal(true);
-			set_physics_process_internal(false);
-		} else {
-			set_process_internal(false);
-			set_physics_process_internal(true);
-		}
+		set_process_internal(false);
+		set_physics_process_internal(true);
 	}
 }
 
@@ -187,15 +159,8 @@ Transform2D Camera2D::get_camera_transform() {
 			}
 		}
 
-		// FIXME: There is a bug here, introduced before physics interpolation.
-		// Smoothing occurs rather confusingly during the call to get_camera_transform().
-		// It may be called MULTIPLE TIMES on certain frames,
-		// therefore smoothing is not currently applied only once per frame / tick,
-		// which will result in some haphazard results.
 		if (position_smoothing_enabled && !_is_editing_in_editor()) {
-			bool physics_process = (process_callback == CAMERA2D_PROCESS_PHYSICS) || is_physics_interpolated_and_enabled();
-			real_t delta = physics_process ? get_physics_process_delta_time() : get_process_delta_time();
-			real_t c = position_smoothing_speed * delta;
+			real_t c = position_smoothing_speed * (process_callback == CAMERA2D_PROCESS_PHYSICS ? get_physics_process_delta_time() : get_process_delta_time());
 			smoothed_camera_pos = ((camera_pos - smoothed_camera_pos) * c) + smoothed_camera_pos;
 			ret_camera_pos = smoothed_camera_pos;
 			//camera_pos=camera_pos*(1.0-position_smoothing_speed)+new_camera_pos*position_smoothing_speed;
@@ -256,59 +221,16 @@ Transform2D Camera2D::get_camera_transform() {
 	return xform.affine_inverse();
 }
 
-void Camera2D::_ensure_update_interpolation_data() {
-	// The "curr -> previous" update can either occur
-	// on NOTIFICATION_INTERNAL_PHYSICS_PROCESS, OR
-	// on NOTIFICATION_TRANSFORM_CHANGED,
-	// if NOTIFICATION_TRANSFORM_CHANGED takes place earlier than
-	// NOTIFICATION_INTERNAL_PHYSICS_PROCESS on a tick.
-	// This is to ensure that the data keeps flowing, but the new data
-	// doesn't overwrite before prev has been set.
-
-	// Keep the data flowing.
-	uint64_t tick = Engine::get_singleton()->get_physics_frames();
-	if (_interpolation_data.last_update_physics_tick != tick) {
-		_interpolation_data.xform_prev = _interpolation_data.xform_curr;
-		_interpolation_data.last_update_physics_tick = tick;
-	}
-}
-
 void Camera2D::_notification(int p_what) {
 	switch (p_what) {
-#ifdef TOOLS_ENABLED
-		case NOTIFICATION_READY: {
-			if (Engine::get_singleton()->is_editor_hint() && is_part_of_edited_scene()) {
-				ProjectSettings::get_singleton()->connect(SNAME("settings_changed"), callable_mp(this, &Camera2D::_project_settings_changed));
-			}
-		} break;
-#endif
-
-		case NOTIFICATION_INTERNAL_PROCESS: {
+		case NOTIFICATION_INTERNAL_PROCESS:
+		case NOTIFICATION_INTERNAL_PHYSICS_PROCESS: {
 			_update_scroll();
 		} break;
 
-		case NOTIFICATION_INTERNAL_PHYSICS_PROCESS: {
-			if (is_physics_interpolated_and_enabled()) {
-				_ensure_update_interpolation_data();
-				_interpolation_data.xform_curr = get_camera_transform();
-			} else {
-				_update_scroll();
-			}
-		} break;
-
-		case NOTIFICATION_RESET_PHYSICS_INTERPOLATION: {
-			// Force the limits etc. to update.
-			_interpolation_data.xform_curr = get_camera_transform();
-			_interpolation_data.xform_prev = _interpolation_data.xform_curr;
-		} break;
-
 		case NOTIFICATION_TRANSFORM_CHANGED: {
-			if ((!position_smoothing_enabled && !is_physics_interpolated_and_enabled()) || _is_editing_in_editor()) {
+			if (!position_smoothing_enabled || _is_editing_in_editor()) {
 				_update_scroll();
-			}
-			if (is_physics_interpolated_and_enabled()) {
-				_ensure_update_interpolation_data();
-				_interpolation_data.xform_curr = get_camera_transform();
 			}
 		} break;
 
@@ -336,15 +258,6 @@ void Camera2D::_notification(int p_what) {
 			_update_process_callback();
 			first = true;
 			_update_scroll();
-
-			// Note that NOTIFICATION_RESET_PHYSICS_INTERPOLATION
-			// is automatically called before this because Camera2D is inherited
-			// from CanvasItem. However, the camera transform is not up to date
-			// until this point, so we do an extra manual reset.
-			if (is_physics_interpolated_and_enabled()) {
-				_interpolation_data.xform_curr = get_camera_transform();
-				_interpolation_data.xform_prev = _interpolation_data.xform_curr;
-			}
 		} break;
 
 		case NOTIFICATION_EXIT_TREE: {
@@ -516,17 +429,12 @@ void Camera2D::_make_current(Object *p_which) {
 
 	queue_redraw();
 
-	bool was_current = viewport->get_camera_2d() == this;
-	bool is_current = p_which == this;
-
-	if (is_current) {
+	if (p_which == this) {
 		viewport->_camera_2d_set(this);
-	} else if (was_current) {
-		viewport->_camera_2d_set(nullptr);
-	}
-
-	if (is_current != was_current) {
-		_update_process_callback();
+	} else {
+		if (viewport->get_camera_2d() == this) {
+			viewport->_camera_2d_set(nullptr);
+		}
 	}
 }
 
@@ -546,7 +454,6 @@ void Camera2D::make_current() {
 		_make_current(this);
 	}
 	_update_scroll();
-	_update_process_callback();
 }
 
 void Camera2D::clear_current() {
@@ -559,8 +466,6 @@ void Camera2D::clear_current() {
 	if (!custom_viewport || ObjectDB::get_instance(custom_viewport_id)) {
 		viewport->assign_next_enabled_camera_2d(group_name);
 	}
-
-	_update_process_callback();
 }
 
 bool Camera2D::is_current() const {
@@ -645,7 +550,7 @@ void Camera2D::align() {
 }
 
 void Camera2D::set_position_smoothing_speed(real_t p_speed) {
-	position_smoothing_speed = MAX(0, p_speed);
+	position_smoothing_speed = p_speed;
 	_update_process_internal_for_smoothing();
 }
 
@@ -654,7 +559,7 @@ real_t Camera2D::get_position_smoothing_speed() const {
 }
 
 void Camera2D::set_rotation_smoothing_speed(real_t p_speed) {
-	rotation_smoothing_speed = MAX(0, p_speed);
+	rotation_smoothing_speed = p_speed;
 	_update_process_internal_for_smoothing();
 }
 
@@ -808,10 +713,10 @@ bool Camera2D::is_margin_drawing_enabled() const {
 
 void Camera2D::_validate_property(PropertyInfo &p_property) const {
 	if (!position_smoothing_enabled && p_property.name == "position_smoothing_speed") {
-		p_property.usage = PROPERTY_USAGE_NO_EDITOR;
+		p_property.usage = PropertyUsageFlags::NO_EDITOR;
 	}
 	if (!rotation_smoothing_enabled && p_property.name == "rotation_smoothing_speed") {
-		p_property.usage = PROPERTY_USAGE_NO_EDITOR;
+		p_property.usage = PropertyUsageFlags::NO_EDITOR;
 	}
 }
 
@@ -894,24 +799,24 @@ void Camera2D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_margin_drawing_enabled", "margin_drawing_enabled"), &Camera2D::set_margin_drawing_enabled);
 	ClassDB::bind_method(D_METHOD("is_margin_drawing_enabled"), &Camera2D::is_margin_drawing_enabled);
 
-	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2, "offset", PROPERTY_HINT_NONE, "suffix:px"), "set_offset", "get_offset");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "anchor_mode", PROPERTY_HINT_ENUM, "Fixed Top Left,Drag Center"), "set_anchor_mode", "get_anchor_mode");
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2, "offset", PropertyHint::NONE, "suffix:px"), "set_offset", "get_offset");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "anchor_mode", PropertyHint::ENUM, "Fixed TopLeft,Drag Center"), "set_anchor_mode", "get_anchor_mode");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "ignore_rotation"), "set_ignore_rotation", "is_ignoring_rotation");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "enabled"), "set_enabled", "is_enabled");
-	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2, "zoom", PROPERTY_HINT_LINK), "set_zoom", "get_zoom");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "custom_viewport", PROPERTY_HINT_RESOURCE_TYPE, "Viewport", PROPERTY_USAGE_NONE), "set_custom_viewport", "get_custom_viewport");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "process_callback", PROPERTY_HINT_ENUM, "Physics,Idle"), "set_process_callback", "get_process_callback");
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2, "zoom", PropertyHint::LINK), "set_zoom", "get_zoom");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "custom_viewport", PropertyHint::RESOURCE_TYPE, "Viewport", PropertyUsageFlags::NONE), "set_custom_viewport", "get_custom_viewport");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "process_callback", PropertyHint::ENUM, "Physics,Idle"), "set_process_callback", "get_process_callback");
 
 	ADD_GROUP("Limit", "limit_");
-	ADD_PROPERTYI(PropertyInfo(Variant::INT, "limit_left", PROPERTY_HINT_NONE, "suffix:px"), "set_limit", "get_limit", SIDE_LEFT);
-	ADD_PROPERTYI(PropertyInfo(Variant::INT, "limit_top", PROPERTY_HINT_NONE, "suffix:px"), "set_limit", "get_limit", SIDE_TOP);
-	ADD_PROPERTYI(PropertyInfo(Variant::INT, "limit_right", PROPERTY_HINT_NONE, "suffix:px"), "set_limit", "get_limit", SIDE_RIGHT);
-	ADD_PROPERTYI(PropertyInfo(Variant::INT, "limit_bottom", PROPERTY_HINT_NONE, "suffix:px"), "set_limit", "get_limit", SIDE_BOTTOM);
+	ADD_PROPERTYI(PropertyInfo(Variant::INT, "limit_left", PropertyHint::NONE, "suffix:px"), "set_limit", "get_limit", SIDE_LEFT);
+	ADD_PROPERTYI(PropertyInfo(Variant::INT, "limit_top", PropertyHint::NONE, "suffix:px"), "set_limit", "get_limit", SIDE_TOP);
+	ADD_PROPERTYI(PropertyInfo(Variant::INT, "limit_right", PropertyHint::NONE, "suffix:px"), "set_limit", "get_limit", SIDE_RIGHT);
+	ADD_PROPERTYI(PropertyInfo(Variant::INT, "limit_bottom", PropertyHint::NONE, "suffix:px"), "set_limit", "get_limit", SIDE_BOTTOM);
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "limit_smoothed"), "set_limit_smoothing_enabled", "is_limit_smoothing_enabled");
 
 	ADD_GROUP("Position Smoothing", "position_smoothing_");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "position_smoothing_enabled"), "set_position_smoothing_enabled", "is_position_smoothing_enabled");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "position_smoothing_speed", PROPERTY_HINT_NONE, "suffix:px/s"), "set_position_smoothing_speed", "get_position_smoothing_speed");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "position_smoothing_speed", PropertyHint::NONE, "suffix:px/s"), "set_position_smoothing_speed", "get_position_smoothing_speed");
 
 	ADD_GROUP("Rotation Smoothing", "rotation_smoothing_");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "rotation_smoothing_enabled"), "set_rotation_smoothing_enabled", "is_rotation_smoothing_enabled");
@@ -920,12 +825,12 @@ void Camera2D::_bind_methods() {
 	ADD_GROUP("Drag", "drag_");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "drag_horizontal_enabled"), "set_drag_horizontal_enabled", "is_drag_horizontal_enabled");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "drag_vertical_enabled"), "set_drag_vertical_enabled", "is_drag_vertical_enabled");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "drag_horizontal_offset", PROPERTY_HINT_RANGE, "-1,1,0.01"), "set_drag_horizontal_offset", "get_drag_horizontal_offset");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "drag_vertical_offset", PROPERTY_HINT_RANGE, "-1,1,0.01"), "set_drag_vertical_offset", "get_drag_vertical_offset");
-	ADD_PROPERTYI(PropertyInfo(Variant::FLOAT, "drag_left_margin", PROPERTY_HINT_RANGE, "0,1,0.01"), "set_drag_margin", "get_drag_margin", SIDE_LEFT);
-	ADD_PROPERTYI(PropertyInfo(Variant::FLOAT, "drag_top_margin", PROPERTY_HINT_RANGE, "0,1,0.01"), "set_drag_margin", "get_drag_margin", SIDE_TOP);
-	ADD_PROPERTYI(PropertyInfo(Variant::FLOAT, "drag_right_margin", PROPERTY_HINT_RANGE, "0,1,0.01"), "set_drag_margin", "get_drag_margin", SIDE_RIGHT);
-	ADD_PROPERTYI(PropertyInfo(Variant::FLOAT, "drag_bottom_margin", PROPERTY_HINT_RANGE, "0,1,0.01"), "set_drag_margin", "get_drag_margin", SIDE_BOTTOM);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "drag_horizontal_offset", PropertyHint::RANGE, "-1,1,0.01"), "set_drag_horizontal_offset", "get_drag_horizontal_offset");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "drag_vertical_offset", PropertyHint::RANGE, "-1,1,0.01"), "set_drag_vertical_offset", "get_drag_vertical_offset");
+	ADD_PROPERTYI(PropertyInfo(Variant::FLOAT, "drag_left_margin", PropertyHint::RANGE, "0,1,0.01"), "set_drag_margin", "get_drag_margin", SIDE_LEFT);
+	ADD_PROPERTYI(PropertyInfo(Variant::FLOAT, "drag_top_margin", PropertyHint::RANGE, "0,1,0.01"), "set_drag_margin", "get_drag_margin", SIDE_TOP);
+	ADD_PROPERTYI(PropertyInfo(Variant::FLOAT, "drag_right_margin", PropertyHint::RANGE, "0,1,0.01"), "set_drag_margin", "get_drag_margin", SIDE_RIGHT);
+	ADD_PROPERTYI(PropertyInfo(Variant::FLOAT, "drag_bottom_margin", PropertyHint::RANGE, "0,1,0.01"), "set_drag_margin", "get_drag_margin", SIDE_BOTTOM);
 
 	ADD_GROUP("Editor", "editor_");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "editor_draw_screen"), "set_screen_drawing_enabled", "is_screen_drawing_enabled");

@@ -152,7 +152,7 @@ struct GetTypeInfo<ObjectID> {
 	static const Variant::Type VARIANT_TYPE = Variant::INT;
 	static const GodotTypeInfo::Metadata METADATA = GodotTypeInfo::METADATA_INT_IS_UINT64;
 	static inline PropertyInfo get_class_info() {
-		return PropertyInfo(Variant::INT, String(), PROPERTY_HINT_INT_IS_OBJECTID);
+		return PropertyInfo(Variant::INT, String(), PropertyHint::INT_IS_OBJECTID);
 	}
 };
 
@@ -162,7 +162,7 @@ struct GetTypeInfo<Variant> {
 	static const Variant::Type VARIANT_TYPE = Variant::NIL;
 	static const GodotTypeInfo::Metadata METADATA = GodotTypeInfo::METADATA_NONE;
 	static inline PropertyInfo get_class_info() {
-		return PropertyInfo(Variant::NIL, String(), PROPERTY_HINT_NONE, String(), PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_NIL_IS_VARIANT);
+		return PropertyInfo(Variant::NIL, String(), PropertyHint::NONE, String(), PropertyUsageFlags::DEFAULT | PropertyUsageFlags::NIL_IS_VARIANT);
 	}
 };
 
@@ -171,7 +171,7 @@ struct GetTypeInfo<const Variant &> {
 	static const Variant::Type VARIANT_TYPE = Variant::NIL;
 	static const GodotTypeInfo::Metadata METADATA = GodotTypeInfo::METADATA_NONE;
 	static inline PropertyInfo get_class_info() {
-		return PropertyInfo(Variant::NIL, String(), PROPERTY_HINT_NONE, String(), PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_NIL_IS_VARIANT);
+		return PropertyInfo(Variant::NIL, String(), PropertyHint::NONE, String(), PropertyUsageFlags::DEFAULT | PropertyUsageFlags::NIL_IS_VARIANT);
 	}
 };
 
@@ -227,7 +227,7 @@ inline String enum_qualified_name_to_class_info_name(const String &p_qualified_n
 		static const Variant::Type VARIANT_TYPE = Variant::INT;                                                                              \
 		static const GodotTypeInfo::Metadata METADATA = GodotTypeInfo::METADATA_NONE;                                                        \
 		static inline PropertyInfo get_class_info() {                                                                                        \
-			return PropertyInfo(Variant::INT, String(), PROPERTY_HINT_NONE, String(), PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_CLASS_IS_ENUM, \
+			return PropertyInfo(Variant::INT, String(), PropertyHint::NONE, String(), PropertyUsageFlags::DEFAULT | PropertyUsageFlags::CLASS_IS_ENUM, \
 					godot::details::enum_qualified_name_to_class_info_name(String(#m_enum)));                                                \
 		}                                                                                                                                    \
 	};
@@ -273,7 +273,7 @@ public:
 		static const Variant::Type VARIANT_TYPE = Variant::INT;                                                                                  \
 		static const GodotTypeInfo::Metadata METADATA = GodotTypeInfo::METADATA_NONE;                                                            \
 		static inline PropertyInfo get_class_info() {                                                                                            \
-			return PropertyInfo(Variant::INT, String(), PROPERTY_HINT_NONE, String(), PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_CLASS_IS_BITFIELD, \
+			return PropertyInfo(Variant::INT, String(), PropertyHint::NONE, String(), PropertyUsageFlags::DEFAULT | PropertyUsageFlags::CLASS_IS_BITFIELD, \
 					godot::details::enum_qualified_name_to_class_info_name(String(#m_enum)));                                                    \
 		}                                                                                                                                        \
 	};                                                                                                                                           \
@@ -282,7 +282,7 @@ public:
 		static const Variant::Type VARIANT_TYPE = Variant::INT;                                                                                  \
 		static const GodotTypeInfo::Metadata METADATA = GodotTypeInfo::METADATA_NONE;                                                            \
 		static inline PropertyInfo get_class_info() {                                                                                            \
-			return PropertyInfo(Variant::INT, String(), PROPERTY_HINT_NONE, String(), PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_CLASS_IS_BITFIELD, \
+			return PropertyInfo(Variant::INT, String(), PropertyHint::NONE, String(), PropertyUsageFlags::DEFAULT | PropertyUsageFlags::CLASS_IS_BITFIELD, \
 					godot::details::enum_qualified_name_to_class_info_name(String(#m_enum)));                                                    \
 		}                                                                                                                                        \
 	};

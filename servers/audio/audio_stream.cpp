@@ -442,7 +442,7 @@ void AudioStreamRandomizer::add_stream(int p_index, Ref<AudioStream> p_stream, f
 	ERR_FAIL_COND(p_index > audio_stream_pool.size());
 	PoolEntry entry{ p_stream, p_weight };
 	audio_stream_pool.insert(p_index, entry);
-	emit_signal(CoreStringName(changed));
+	emit_signal(SNAME("changed"));
 	notify_property_list_changed();
 }
 
@@ -459,21 +459,21 @@ void AudioStreamRandomizer::move_stream(int p_index_from, int p_index_to) {
 		p_index_from++;
 	}
 	audio_stream_pool.remove_at(p_index_from);
-	emit_signal(CoreStringName(changed));
+	emit_signal(SNAME("changed"));
 	notify_property_list_changed();
 }
 
 void AudioStreamRandomizer::remove_stream(int p_index) {
 	ERR_FAIL_INDEX(p_index, audio_stream_pool.size());
 	audio_stream_pool.remove_at(p_index);
-	emit_signal(CoreStringName(changed));
+	emit_signal(SNAME("changed"));
 	notify_property_list_changed();
 }
 
 void AudioStreamRandomizer::set_stream(int p_index, Ref<AudioStream> p_stream) {
 	ERR_FAIL_INDEX(p_index, audio_stream_pool.size());
 	audio_stream_pool.write[p_index].stream = p_stream;
-	emit_signal(CoreStringName(changed));
+	emit_signal(SNAME("changed"));
 }
 
 Ref<AudioStream> AudioStreamRandomizer::get_stream(int p_index) const {
@@ -484,7 +484,7 @@ Ref<AudioStream> AudioStreamRandomizer::get_stream(int p_index) const {
 void AudioStreamRandomizer::set_stream_probability_weight(int p_index, float p_weight) {
 	ERR_FAIL_INDEX(p_index, audio_stream_pool.size());
 	audio_stream_pool.write[p_index].weight = p_weight;
-	emit_signal(CoreStringName(changed));
+	emit_signal(SNAME("changed"));
 }
 
 float AudioStreamRandomizer::get_stream_probability_weight(int p_index) const {
@@ -618,7 +618,7 @@ Ref<AudioStreamPlayback> AudioStreamRandomizer::instance_playback_sequential() {
 		if (entry.stream.is_null()) {
 			continue;
 		}
-		if (local_pool.has(entry.stream)) {
+		if (local_pool.find(entry.stream) != -1) {
 			WARN_PRINT("Duplicate stream in sequential playback pool");
 			continue;
 		}
@@ -676,6 +676,63 @@ bool AudioStreamRandomizer::is_monophonic() const {
 	return false;
 }
 
+bool AudioStreamRandomizer::_get(const StringName &p_name, Variant &r_ret) const {
+	if (AudioStream::_get(p_name, r_ret)) {
+		return true;
+	}
+	Vector<String> components = String(p_name).split("/", true, 2);
+	if (components.size() == 2 && components[0].begins_with("stream_") && components[0].trim_prefix("stream_").is_valid_int()) {
+		int index = components[0].trim_prefix("stream_").to_int();
+		if (index < 0 || index >= (int)audio_stream_pool.size()) {
+			return false;
+		}
+
+		if (components[1] == "stream") {
+			r_ret = get_stream(index);
+			return true;
+		} else if (components[1] == "weight") {
+			r_ret = get_stream_probability_weight(index);
+			return true;
+		} else {
+			return false;
+		}
+	}
+	return false;
+}
+
+bool AudioStreamRandomizer::_set(const StringName &p_name, const Variant &p_value) {
+	if (AudioStream::_set(p_name, p_value)) {
+		return true;
+	}
+	Vector<String> components = String(p_name).split("/", true, 2);
+	if (components.size() == 2 && components[0].begins_with("stream_") && components[0].trim_prefix("stream_").is_valid_int()) {
+		int index = components[0].trim_prefix("stream_").to_int();
+		if (index < 0 || index >= (int)audio_stream_pool.size()) {
+			return false;
+		}
+
+		if (components[1] == "stream") {
+			set_stream(index, p_value);
+			return true;
+		} else if (components[1] == "weight") {
+			set_stream_probability_weight(index, p_value);
+			return true;
+		} else {
+			return false;
+		}
+	}
+	return false;
+}
+
+void AudioStreamRandomizer::_get_property_list(List<PropertyInfo> *p_list) const {
+	AudioStream::_get_property_list(p_list); // Define the trivial scalar properties.
+	p_list->push_back(PropertyInfo(Variant::NIL, "Streams", PropertyHint::NONE, "", PropertyUsageFlags::GROUP));
+	for (int i = 0; i < audio_stream_pool.size(); i++) {
+		p_list->push_back(PropertyInfo(Variant::OBJECT, vformat("stream_%d/stream", i), PropertyHint::RESOURCE_TYPE, "AudioStream"));
+		p_list->push_back(PropertyInfo(Variant::FLOAT, vformat("stream_%d/weight", i), PropertyHint::RANGE, "0,100,0.001,or_greater"));
+	}
+}
+
 void AudioStreamRandomizer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("add_stream", "index", "stream", "weight"), &AudioStreamRandomizer::add_stream, DEFVAL(1.0));
 	ClassDB::bind_method(D_METHOD("move_stream", "index_from", "index_to"), &AudioStreamRandomizer::move_stream);
@@ -698,27 +755,18 @@ void AudioStreamRandomizer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_playback_mode", "mode"), &AudioStreamRandomizer::set_playback_mode);
 	ClassDB::bind_method(D_METHOD("get_playback_mode"), &AudioStreamRandomizer::get_playback_mode);
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "playback_mode", PROPERTY_HINT_ENUM, "Random (Avoid Repeats),Random,Sequential"), "set_playback_mode", "get_playback_mode");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "random_pitch", PROPERTY_HINT_RANGE, "1,16,0.01"), "set_random_pitch", "get_random_pitch");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "random_volume_offset_db", PROPERTY_HINT_RANGE, "0,40,0.01,suffix:dB"), "set_random_volume_offset_db", "get_random_volume_offset_db");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "playback_mode", PropertyHint::ENUM, "Random (Avoid Repeats),Random,Sequential"), "set_playback_mode", "get_playback_mode");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "random_pitch", PropertyHint::RANGE, "1,16,0.01"), "set_random_pitch", "get_random_pitch");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "random_volume_offset_db", PropertyHint::RANGE, "0,40,0.01,suffix:dB"), "set_random_volume_offset_db", "get_random_volume_offset_db");
 	ADD_ARRAY("streams", "stream_");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "streams_count", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR), "set_streams_count", "get_streams_count");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "streams_count", PropertyHint::NONE, "", PropertyUsageFlags::NO_EDITOR), "set_streams_count", "get_streams_count");
 
 	BIND_ENUM_CONSTANT(PLAYBACK_RANDOM_NO_REPEATS);
 	BIND_ENUM_CONSTANT(PLAYBACK_RANDOM);
 	BIND_ENUM_CONSTANT(PLAYBACK_SEQUENTIAL);
-
-	PoolEntry defaults;
-
-	base_property_helper.set_prefix("stream_");
-	base_property_helper.set_array_length_getter(&AudioStreamRandomizer::get_streams_count);
-	base_property_helper.register_property(PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, "AudioStream"), defaults.stream, &AudioStreamRandomizer::set_stream, &AudioStreamRandomizer::get_stream);
-	base_property_helper.register_property(PropertyInfo(Variant::FLOAT, "weight", PROPERTY_HINT_RANGE, "0,100,0.001,or_greater"), defaults.weight, &AudioStreamRandomizer::set_stream_probability_weight, &AudioStreamRandomizer::get_stream_probability_weight);
 }
 
-AudioStreamRandomizer::AudioStreamRandomizer() {
-	property_helper.setup_for_instance(base_property_helper, this);
-}
+AudioStreamRandomizer::AudioStreamRandomizer() {}
 
 void AudioStreamPlaybackRandomizer::start(double p_from_pos) {
 	playing = playback;

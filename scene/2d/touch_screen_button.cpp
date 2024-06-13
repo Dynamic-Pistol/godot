@@ -31,17 +31,18 @@
 #include "touch_screen_button.h"
 
 #include "scene/main/window.h"
+#include "scene/scene_string_names.h"
 
 void TouchScreenButton::set_texture_normal(const Ref<Texture2D> &p_texture) {
 	if (texture_normal == p_texture) {
 		return;
 	}
 	if (texture_normal.is_valid()) {
-		texture_normal->disconnect(CoreStringName(changed), callable_mp((CanvasItem *)this, &CanvasItem::queue_redraw));
+		texture_normal->disconnect(SceneStringNames::get_singleton()->changed, callable_mp((CanvasItem *)this, &CanvasItem::queue_redraw));
 	}
 	texture_normal = p_texture;
 	if (texture_normal.is_valid()) {
-		texture_normal->connect(CoreStringName(changed), callable_mp((CanvasItem *)this, &CanvasItem::queue_redraw), CONNECT_REFERENCE_COUNTED);
+		texture_normal->connect(SceneStringNames::get_singleton()->changed, callable_mp((CanvasItem *)this, &CanvasItem::queue_redraw), CONNECT_REFERENCE_COUNTED);
 	}
 	queue_redraw();
 }
@@ -55,11 +56,11 @@ void TouchScreenButton::set_texture_pressed(const Ref<Texture2D> &p_texture_pres
 		return;
 	}
 	if (texture_pressed.is_valid()) {
-		texture_pressed->disconnect(CoreStringName(changed), callable_mp((CanvasItem *)this, &CanvasItem::queue_redraw));
+		texture_pressed->disconnect(SceneStringNames::get_singleton()->changed, callable_mp((CanvasItem *)this, &CanvasItem::queue_redraw));
 	}
 	texture_pressed = p_texture_pressed;
 	if (texture_pressed.is_valid()) {
-		texture_pressed->connect(CoreStringName(changed), callable_mp((CanvasItem *)this, &CanvasItem::queue_redraw), CONNECT_REFERENCE_COUNTED);
+		texture_pressed->connect(SceneStringNames::get_singleton()->changed, callable_mp((CanvasItem *)this, &CanvasItem::queue_redraw), CONNECT_REFERENCE_COUNTED);
 	}
 	queue_redraw();
 }
@@ -305,7 +306,7 @@ void TouchScreenButton::_press(int p_finger_pressed) {
 		get_viewport()->push_input(iea, true);
 	}
 
-	emit_signal(SceneStringName(pressed));
+	emit_signal(SNAME("pressed"));
 	queue_redraw();
 }
 
@@ -370,10 +371,10 @@ bool TouchScreenButton::is_passby_press_enabled() const {
 
 #ifndef DISABLE_DEPRECATED
 bool TouchScreenButton::_set(const StringName &p_name, const Variant &p_value) {
-	if (p_name == CoreStringName(normal)) { // Compatibility with Godot 3.x.
+	if (p_name == SNAME("normal")) { // Compatibility with Godot 3.x.
 		set_texture_normal(p_value);
 		return true;
-	} else if (p_name == SceneStringName(pressed)) { // Compatibility with Godot 3.x.
+	} else if (p_name == SNAME("pressed")) { // Compatibility with Godot 3.x.
 		set_texture_pressed(p_value);
 		return true;
 	}
@@ -411,15 +412,15 @@ void TouchScreenButton::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("is_pressed"), &TouchScreenButton::is_pressed);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "texture_normal", PROPERTY_HINT_RESOURCE_TYPE, "Texture2D"), "set_texture_normal", "get_texture_normal");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "texture_pressed", PROPERTY_HINT_RESOURCE_TYPE, "Texture2D"), "set_texture_pressed", "get_texture_pressed");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "bitmask", PROPERTY_HINT_RESOURCE_TYPE, "BitMap"), "set_bitmask", "get_bitmask");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "shape", PROPERTY_HINT_RESOURCE_TYPE, "Shape2D"), "set_shape", "get_shape");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "texture_normal", PropertyHint::RESOURCE_TYPE, "Texture2D"), "set_texture_normal", "get_texture_normal");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "texture_pressed", PropertyHint::RESOURCE_TYPE, "Texture2D"), "set_texture_pressed", "get_texture_pressed");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "bitmask", PropertyHint::RESOURCE_TYPE, "BitMap"), "set_bitmask", "get_bitmask");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "shape", PropertyHint::RESOURCE_TYPE, "Shape2D"), "set_shape", "get_shape");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "shape_centered"), "set_shape_centered", "is_shape_centered");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "shape_visible"), "set_shape_visible", "is_shape_visible");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "passby_press"), "set_passby_press", "is_passby_press_enabled");
-	ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "action", PROPERTY_HINT_INPUT_NAME, "allow_builtin"), "set_action", "get_action");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "visibility_mode", PROPERTY_HINT_ENUM, "Always,TouchScreen Only"), "set_visibility_mode", "get_visibility_mode");
+	ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "action"), "set_action", "get_action");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "visibility_mode", PropertyHint::ENUM, "Always,TouchScreen Only"), "set_visibility_mode", "get_visibility_mode");
 
 	ADD_SIGNAL(MethodInfo("pressed"));
 	ADD_SIGNAL(MethodInfo("released"));

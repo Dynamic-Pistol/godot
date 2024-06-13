@@ -129,7 +129,7 @@ void PrimitiveMesh::_update() const {
 	const_cast<PrimitiveMesh *>(this)->emit_changed();
 }
 
-void PrimitiveMesh::request_update() {
+void PrimitiveMesh::_request_update() {
 	if (pending_request) {
 		return;
 	}
@@ -249,13 +249,11 @@ void PrimitiveMesh::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_uv2_padding", "uv2_padding"), &PrimitiveMesh::set_uv2_padding);
 	ClassDB::bind_method(D_METHOD("get_uv2_padding"), &PrimitiveMesh::get_uv2_padding);
 
-	ClassDB::bind_method(D_METHOD("request_update"), &PrimitiveMesh::request_update);
-
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE, "BaseMaterial3D,ShaderMaterial"), "set_material", "get_material");
-	ADD_PROPERTY(PropertyInfo(Variant::AABB, "custom_aabb", PROPERTY_HINT_NONE, "suffix:m"), "set_custom_aabb", "get_custom_aabb");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PropertyHint::RESOURCE_TYPE, "BaseMaterial3D,ShaderMaterial"), "set_material", "get_material");
+	ADD_PROPERTY(PropertyInfo(Variant::AABB, "custom_aabb", PropertyHint::NONE, "suffix:m"), "set_custom_aabb", "get_custom_aabb");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "flip_faces"), "set_flip_faces", "get_flip_faces");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "add_uv2"), "set_add_uv2", "get_add_uv2");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "uv2_padding", PROPERTY_HINT_RANGE, "0,10,0.01,or_greater"), "set_uv2_padding", "get_uv2_padding");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "uv2_padding", PropertyHint::RANGE, "0,10,0.01,or_greater"), "set_uv2_padding", "get_uv2_padding");
 
 	GDVIRTUAL_BIND(_create_mesh_array);
 }
@@ -290,7 +288,7 @@ AABB PrimitiveMesh::get_custom_aabb() const {
 
 void PrimitiveMesh::set_flip_faces(bool p_enable) {
 	flip_faces = p_enable;
-	request_update();
+	_request_update();
 }
 
 bool PrimitiveMesh::get_flip_faces() const {
@@ -300,13 +298,13 @@ bool PrimitiveMesh::get_flip_faces() const {
 void PrimitiveMesh::set_add_uv2(bool p_enable) {
 	add_uv2 = p_enable;
 	_update_lightmap_size();
-	request_update();
+	_request_update();
 }
 
 void PrimitiveMesh::set_uv2_padding(float p_padding) {
 	uv2_padding = p_padding;
 	_update_lightmap_size();
-	request_update();
+	_request_update();
 }
 
 Vector2 PrimitiveMesh::get_uv2_scale(Vector2 p_margin_scale) const {
@@ -549,10 +547,10 @@ void CapsuleMesh::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_rings", "rings"), &CapsuleMesh::set_rings);
 	ClassDB::bind_method(D_METHOD("get_rings"), &CapsuleMesh::get_rings);
 
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "radius", PROPERTY_HINT_RANGE, "0.001,100.0,0.001,or_greater,suffix:m"), "set_radius", "get_radius");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "height", PROPERTY_HINT_RANGE, "0.001,100.0,0.001,or_greater,suffix:m"), "set_height", "get_height");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "radial_segments", PROPERTY_HINT_RANGE, "1,100,1,or_greater"), "set_radial_segments", "get_radial_segments");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "rings", PROPERTY_HINT_RANGE, "0,100,1,or_greater"), "set_rings", "get_rings");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "radius", PropertyHint::RANGE, "0.001,100.0,0.001,or_greater,suffix:m"), "set_radius", "get_radius");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "height", PropertyHint::RANGE, "0.001,100.0,0.001,or_greater,suffix:m"), "set_height", "get_height");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "radial_segments", PropertyHint::RANGE, "1,100,1,or_greater"), "set_radial_segments", "get_radial_segments");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "rings", PropertyHint::RANGE, "0,100,1,or_greater"), "set_rings", "get_rings");
 
 	ADD_LINKED_PROPERTY("radius", "height");
 	ADD_LINKED_PROPERTY("height", "radius");
@@ -564,7 +562,7 @@ void CapsuleMesh::set_radius(const float p_radius) {
 		height = radius * 2.0;
 	}
 	_update_lightmap_size();
-	request_update();
+	_request_update();
 }
 
 float CapsuleMesh::get_radius() const {
@@ -577,7 +575,7 @@ void CapsuleMesh::set_height(const float p_height) {
 		radius = height * 0.5;
 	}
 	_update_lightmap_size();
-	request_update();
+	_request_update();
 }
 
 float CapsuleMesh::get_height() const {
@@ -586,7 +584,7 @@ float CapsuleMesh::get_height() const {
 
 void CapsuleMesh::set_radial_segments(const int p_segments) {
 	radial_segments = p_segments > 4 ? p_segments : 4;
-	request_update();
+	_request_update();
 }
 
 int CapsuleMesh::get_radial_segments() const {
@@ -596,7 +594,7 @@ int CapsuleMesh::get_radial_segments() const {
 void CapsuleMesh::set_rings(const int p_rings) {
 	ERR_FAIL_COND(p_rings < 0);
 	rings = p_rings;
-	request_update();
+	_request_update();
 }
 
 int CapsuleMesh::get_rings() const {
@@ -884,16 +882,16 @@ void BoxMesh::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_subdivide_depth", "divisions"), &BoxMesh::set_subdivide_depth);
 	ClassDB::bind_method(D_METHOD("get_subdivide_depth"), &BoxMesh::get_subdivide_depth);
 
-	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "size", PROPERTY_HINT_NONE, "suffix:m"), "set_size", "get_size");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "subdivide_width", PROPERTY_HINT_RANGE, "0,100,1,or_greater"), "set_subdivide_width", "get_subdivide_width");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "subdivide_height", PROPERTY_HINT_RANGE, "0,100,1,or_greater"), "set_subdivide_height", "get_subdivide_height");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "subdivide_depth", PROPERTY_HINT_RANGE, "0,100,1,or_greater"), "set_subdivide_depth", "get_subdivide_depth");
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "size", PropertyHint::NONE, "suffix:m"), "set_size", "get_size");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "subdivide_width", PropertyHint::RANGE, "0,100,1,or_greater"), "set_subdivide_width", "get_subdivide_width");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "subdivide_height", PropertyHint::RANGE, "0,100,1,or_greater"), "set_subdivide_height", "get_subdivide_height");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "subdivide_depth", PropertyHint::RANGE, "0,100,1,or_greater"), "set_subdivide_depth", "get_subdivide_depth");
 }
 
 void BoxMesh::set_size(const Vector3 &p_size) {
 	size = p_size;
 	_update_lightmap_size();
-	request_update();
+	_request_update();
 }
 
 Vector3 BoxMesh::get_size() const {
@@ -902,7 +900,7 @@ Vector3 BoxMesh::get_size() const {
 
 void BoxMesh::set_subdivide_width(const int p_divisions) {
 	subdivide_w = p_divisions > 0 ? p_divisions : 0;
-	request_update();
+	_request_update();
 }
 
 int BoxMesh::get_subdivide_width() const {
@@ -911,7 +909,7 @@ int BoxMesh::get_subdivide_width() const {
 
 void BoxMesh::set_subdivide_height(const int p_divisions) {
 	subdivide_h = p_divisions > 0 ? p_divisions : 0;
-	request_update();
+	_request_update();
 }
 
 int BoxMesh::get_subdivide_height() const {
@@ -920,7 +918,7 @@ int BoxMesh::get_subdivide_height() const {
 
 void BoxMesh::set_subdivide_depth(const int p_divisions) {
 	subdivide_d = p_divisions > 0 ? p_divisions : 0;
-	request_update();
+	_request_update();
 }
 
 int BoxMesh::get_subdivide_depth() const {
@@ -1158,11 +1156,11 @@ void CylinderMesh::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_cap_bottom", "cap_bottom"), &CylinderMesh::set_cap_bottom);
 	ClassDB::bind_method(D_METHOD("is_cap_bottom"), &CylinderMesh::is_cap_bottom);
 
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "top_radius", PROPERTY_HINT_RANGE, "0,100,0.001,or_greater,suffix:m"), "set_top_radius", "get_top_radius");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "bottom_radius", PROPERTY_HINT_RANGE, "0,100,0.001,or_greater,suffix:m"), "set_bottom_radius", "get_bottom_radius");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "height", PROPERTY_HINT_RANGE, "0.001,100,0.001,or_greater,suffix:m"), "set_height", "get_height");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "radial_segments", PROPERTY_HINT_RANGE, "1,100,1,or_greater"), "set_radial_segments", "get_radial_segments");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "rings", PROPERTY_HINT_RANGE, "0,100,1,or_greater"), "set_rings", "get_rings");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "top_radius", PropertyHint::RANGE, "0,100,0.001,or_greater,suffix:m"), "set_top_radius", "get_top_radius");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "bottom_radius", PropertyHint::RANGE, "0,100,0.001,or_greater,suffix:m"), "set_bottom_radius", "get_bottom_radius");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "height", PropertyHint::RANGE, "0.001,100,0.001,or_greater,suffix:m"), "set_height", "get_height");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "radial_segments", PropertyHint::RANGE, "1,100,1,or_greater"), "set_radial_segments", "get_radial_segments");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "rings", PropertyHint::RANGE, "0,100,1,or_greater"), "set_rings", "get_rings");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "cap_top"), "set_cap_top", "is_cap_top");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "cap_bottom"), "set_cap_bottom", "is_cap_bottom");
 }
@@ -1170,7 +1168,7 @@ void CylinderMesh::_bind_methods() {
 void CylinderMesh::set_top_radius(const float p_radius) {
 	top_radius = p_radius;
 	_update_lightmap_size();
-	request_update();
+	_request_update();
 }
 
 float CylinderMesh::get_top_radius() const {
@@ -1180,7 +1178,7 @@ float CylinderMesh::get_top_radius() const {
 void CylinderMesh::set_bottom_radius(const float p_radius) {
 	bottom_radius = p_radius;
 	_update_lightmap_size();
-	request_update();
+	_request_update();
 }
 
 float CylinderMesh::get_bottom_radius() const {
@@ -1190,7 +1188,7 @@ float CylinderMesh::get_bottom_radius() const {
 void CylinderMesh::set_height(const float p_height) {
 	height = p_height;
 	_update_lightmap_size();
-	request_update();
+	_request_update();
 }
 
 float CylinderMesh::get_height() const {
@@ -1199,7 +1197,7 @@ float CylinderMesh::get_height() const {
 
 void CylinderMesh::set_radial_segments(const int p_segments) {
 	radial_segments = p_segments > 4 ? p_segments : 4;
-	request_update();
+	_request_update();
 }
 
 int CylinderMesh::get_radial_segments() const {
@@ -1209,7 +1207,7 @@ int CylinderMesh::get_radial_segments() const {
 void CylinderMesh::set_rings(const int p_rings) {
 	ERR_FAIL_COND(p_rings < 0);
 	rings = p_rings;
-	request_update();
+	_request_update();
 }
 
 int CylinderMesh::get_rings() const {
@@ -1218,7 +1216,7 @@ int CylinderMesh::get_rings() const {
 
 void CylinderMesh::set_cap_top(bool p_cap_top) {
 	cap_top = p_cap_top;
-	request_update();
+	_request_update();
 }
 
 bool CylinderMesh::is_cap_top() const {
@@ -1227,7 +1225,7 @@ bool CylinderMesh::is_cap_top() const {
 
 void CylinderMesh::set_cap_bottom(bool p_cap_bottom) {
 	cap_bottom = p_cap_bottom;
-	request_update();
+	_request_update();
 }
 
 bool CylinderMesh::is_cap_bottom() const {
@@ -1349,11 +1347,11 @@ void PlaneMesh::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_orientation", "orientation"), &PlaneMesh::set_orientation);
 	ClassDB::bind_method(D_METHOD("get_orientation"), &PlaneMesh::get_orientation);
 
-	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2, "size", PROPERTY_HINT_NONE, "suffix:m"), "set_size", "get_size");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "subdivide_width", PROPERTY_HINT_RANGE, "0,100,1,or_greater"), "set_subdivide_width", "get_subdivide_width");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "subdivide_depth", PROPERTY_HINT_RANGE, "0,100,1,or_greater"), "set_subdivide_depth", "get_subdivide_depth");
-	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "center_offset", PROPERTY_HINT_NONE, "suffix:m"), "set_center_offset", "get_center_offset");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "orientation", PROPERTY_HINT_ENUM, "Face X,Face Y,Face Z"), "set_orientation", "get_orientation");
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2, "size", PropertyHint::NONE, "suffix:m"), "set_size", "get_size");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "subdivide_width", PropertyHint::RANGE, "0,100,1,or_greater"), "set_subdivide_width", "get_subdivide_width");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "subdivide_depth", PropertyHint::RANGE, "0,100,1,or_greater"), "set_subdivide_depth", "get_subdivide_depth");
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "center_offset", PropertyHint::NONE, "suffix:m"), "set_center_offset", "get_center_offset");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "orientation", PropertyHint::ENUM, "Face X,Face Y,Face Z"), "set_orientation", "get_orientation");
 
 	BIND_ENUM_CONSTANT(FACE_X)
 	BIND_ENUM_CONSTANT(FACE_Y)
@@ -1363,7 +1361,7 @@ void PlaneMesh::_bind_methods() {
 void PlaneMesh::set_size(const Size2 &p_size) {
 	size = p_size;
 	_update_lightmap_size();
-	request_update();
+	_request_update();
 }
 
 Size2 PlaneMesh::get_size() const {
@@ -1372,7 +1370,7 @@ Size2 PlaneMesh::get_size() const {
 
 void PlaneMesh::set_subdivide_width(const int p_divisions) {
 	subdivide_w = p_divisions > 0 ? p_divisions : 0;
-	request_update();
+	_request_update();
 }
 
 int PlaneMesh::get_subdivide_width() const {
@@ -1381,7 +1379,7 @@ int PlaneMesh::get_subdivide_width() const {
 
 void PlaneMesh::set_subdivide_depth(const int p_divisions) {
 	subdivide_d = p_divisions > 0 ? p_divisions : 0;
-	request_update();
+	_request_update();
 }
 
 int PlaneMesh::get_subdivide_depth() const {
@@ -1390,7 +1388,7 @@ int PlaneMesh::get_subdivide_depth() const {
 
 void PlaneMesh::set_center_offset(const Vector3 p_offset) {
 	center_offset = p_offset;
-	request_update();
+	_request_update();
 }
 
 Vector3 PlaneMesh::get_center_offset() const {
@@ -1399,7 +1397,7 @@ Vector3 PlaneMesh::get_center_offset() const {
 
 void PlaneMesh::set_orientation(const Orientation p_orientation) {
 	orientation = p_orientation;
-	request_update();
+	_request_update();
 }
 
 PlaneMesh::Orientation PlaneMesh::get_orientation() const {
@@ -1699,16 +1697,16 @@ void PrismMesh::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_subdivide_depth", "segments"), &PrismMesh::set_subdivide_depth);
 	ClassDB::bind_method(D_METHOD("get_subdivide_depth"), &PrismMesh::get_subdivide_depth);
 
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "left_to_right", PROPERTY_HINT_RANGE, "-2.0,2.0,0.1"), "set_left_to_right", "get_left_to_right");
-	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "size", PROPERTY_HINT_NONE, "suffix:m"), "set_size", "get_size");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "subdivide_width", PROPERTY_HINT_RANGE, "0,100,1,or_greater"), "set_subdivide_width", "get_subdivide_width");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "subdivide_height", PROPERTY_HINT_RANGE, "0,100,1,or_greater"), "set_subdivide_height", "get_subdivide_height");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "subdivide_depth", PROPERTY_HINT_RANGE, "0,100,1,or_greater"), "set_subdivide_depth", "get_subdivide_depth");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "left_to_right", PropertyHint::RANGE, "-2.0,2.0,0.1"), "set_left_to_right", "get_left_to_right");
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "size", PropertyHint::NONE, "suffix:m"), "set_size", "get_size");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "subdivide_width", PropertyHint::RANGE, "0,100,1,or_greater"), "set_subdivide_width", "get_subdivide_width");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "subdivide_height", PropertyHint::RANGE, "0,100,1,or_greater"), "set_subdivide_height", "get_subdivide_height");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "subdivide_depth", PropertyHint::RANGE, "0,100,1,or_greater"), "set_subdivide_depth", "get_subdivide_depth");
 }
 
 void PrismMesh::set_left_to_right(const float p_left_to_right) {
 	left_to_right = p_left_to_right;
-	request_update();
+	_request_update();
 }
 
 float PrismMesh::get_left_to_right() const {
@@ -1718,7 +1716,7 @@ float PrismMesh::get_left_to_right() const {
 void PrismMesh::set_size(const Vector3 &p_size) {
 	size = p_size;
 	_update_lightmap_size();
-	request_update();
+	_request_update();
 }
 
 Vector3 PrismMesh::get_size() const {
@@ -1727,7 +1725,7 @@ Vector3 PrismMesh::get_size() const {
 
 void PrismMesh::set_subdivide_width(const int p_divisions) {
 	subdivide_w = p_divisions > 0 ? p_divisions : 0;
-	request_update();
+	_request_update();
 }
 
 int PrismMesh::get_subdivide_width() const {
@@ -1736,7 +1734,7 @@ int PrismMesh::get_subdivide_width() const {
 
 void PrismMesh::set_subdivide_height(const int p_divisions) {
 	subdivide_h = p_divisions > 0 ? p_divisions : 0;
-	request_update();
+	_request_update();
 }
 
 int PrismMesh::get_subdivide_height() const {
@@ -1745,7 +1743,7 @@ int PrismMesh::get_subdivide_height() const {
 
 void PrismMesh::set_subdivide_depth(const int p_divisions) {
 	subdivide_d = p_divisions > 0 ? p_divisions : 0;
-	request_update();
+	_request_update();
 }
 
 int PrismMesh::get_subdivide_depth() const {
@@ -1884,17 +1882,17 @@ void SphereMesh::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_is_hemisphere", "is_hemisphere"), &SphereMesh::set_is_hemisphere);
 	ClassDB::bind_method(D_METHOD("get_is_hemisphere"), &SphereMesh::get_is_hemisphere);
 
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "radius", PROPERTY_HINT_RANGE, "0.001,100.0,0.001,or_greater,suffix:m"), "set_radius", "get_radius");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "height", PROPERTY_HINT_RANGE, "0.001,100.0,0.001,or_greater,suffix:m"), "set_height", "get_height");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "radial_segments", PROPERTY_HINT_RANGE, "1,100,1,or_greater"), "set_radial_segments", "get_radial_segments");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "rings", PROPERTY_HINT_RANGE, "1,100,1,or_greater"), "set_rings", "get_rings");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "radius", PropertyHint::RANGE, "0.001,100.0,0.001,or_greater,suffix:m"), "set_radius", "get_radius");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "height", PropertyHint::RANGE, "0.001,100.0,0.001,or_greater,suffix:m"), "set_height", "get_height");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "radial_segments", PropertyHint::RANGE, "1,100,1,or_greater"), "set_radial_segments", "get_radial_segments");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "rings", PropertyHint::RANGE, "1,100,1,or_greater"), "set_rings", "get_rings");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "is_hemisphere"), "set_is_hemisphere", "get_is_hemisphere");
 }
 
 void SphereMesh::set_radius(const float p_radius) {
 	radius = p_radius;
 	_update_lightmap_size();
-	request_update();
+	_request_update();
 }
 
 float SphereMesh::get_radius() const {
@@ -1904,7 +1902,7 @@ float SphereMesh::get_radius() const {
 void SphereMesh::set_height(const float p_height) {
 	height = p_height;
 	_update_lightmap_size();
-	request_update();
+	_request_update();
 }
 
 float SphereMesh::get_height() const {
@@ -1913,7 +1911,7 @@ float SphereMesh::get_height() const {
 
 void SphereMesh::set_radial_segments(const int p_radial_segments) {
 	radial_segments = p_radial_segments > 4 ? p_radial_segments : 4;
-	request_update();
+	_request_update();
 }
 
 int SphereMesh::get_radial_segments() const {
@@ -1923,7 +1921,7 @@ int SphereMesh::get_radial_segments() const {
 void SphereMesh::set_rings(const int p_rings) {
 	ERR_FAIL_COND(p_rings < 1);
 	rings = p_rings;
-	request_update();
+	_request_update();
 }
 
 int SphereMesh::get_rings() const {
@@ -1933,7 +1931,7 @@ int SphereMesh::get_rings() const {
 void SphereMesh::set_is_hemisphere(const bool p_is_hemisphere) {
 	is_hemisphere = p_is_hemisphere;
 	_update_lightmap_size();
-	request_update();
+	_request_update();
 }
 
 bool SphereMesh::get_is_hemisphere() const {
@@ -2071,15 +2069,15 @@ void TorusMesh::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_ring_segments", "rings"), &TorusMesh::set_ring_segments);
 	ClassDB::bind_method(D_METHOD("get_ring_segments"), &TorusMesh::get_ring_segments);
 
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "inner_radius", PROPERTY_HINT_RANGE, "0.001,1000.0,0.001,or_greater,exp"), "set_inner_radius", "get_inner_radius");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "outer_radius", PROPERTY_HINT_RANGE, "0.001,1000.0,0.001,or_greater,exp"), "set_outer_radius", "get_outer_radius");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "rings", PROPERTY_HINT_RANGE, "3,128,1,or_greater"), "set_rings", "get_rings");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "ring_segments", PROPERTY_HINT_RANGE, "3,64,1,or_greater"), "set_ring_segments", "get_ring_segments");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "inner_radius", PropertyHint::RANGE, "0.001,1000.0,0.001,or_greater,exp"), "set_inner_radius", "get_inner_radius");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "outer_radius", PropertyHint::RANGE, "0.001,1000.0,0.001,or_greater,exp"), "set_outer_radius", "get_outer_radius");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "rings", PropertyHint::RANGE, "3,128,1,or_greater"), "set_rings", "get_rings");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "ring_segments", PropertyHint::RANGE, "3,64,1,or_greater"), "set_ring_segments", "get_ring_segments");
 }
 
 void TorusMesh::set_inner_radius(const float p_inner_radius) {
 	inner_radius = p_inner_radius;
-	request_update();
+	_request_update();
 }
 
 float TorusMesh::get_inner_radius() const {
@@ -2088,7 +2086,7 @@ float TorusMesh::get_inner_radius() const {
 
 void TorusMesh::set_outer_radius(const float p_outer_radius) {
 	outer_radius = p_outer_radius;
-	request_update();
+	_request_update();
 }
 
 float TorusMesh::get_outer_radius() const {
@@ -2098,7 +2096,7 @@ float TorusMesh::get_outer_radius() const {
 void TorusMesh::set_rings(const int p_rings) {
 	ERR_FAIL_COND(p_rings < 3);
 	rings = p_rings;
-	request_update();
+	_request_update();
 }
 
 int TorusMesh::get_rings() const {
@@ -2108,7 +2106,7 @@ int TorusMesh::get_rings() const {
 void TorusMesh::set_ring_segments(const int p_ring_segments) {
 	ERR_FAIL_COND(p_ring_segments < 3);
 	ring_segments = p_ring_segments;
-	request_update();
+	_request_update();
 }
 
 int TorusMesh::get_ring_segments() const {
@@ -2136,7 +2134,7 @@ PointMesh::PointMesh() {
 
 void TubeTrailMesh::set_radius(const float p_radius) {
 	radius = p_radius;
-	request_update();
+	_request_update();
 }
 float TubeTrailMesh::get_radius() const {
 	return radius;
@@ -2145,7 +2143,7 @@ float TubeTrailMesh::get_radius() const {
 void TubeTrailMesh::set_radial_steps(const int p_radial_steps) {
 	ERR_FAIL_COND(p_radial_steps < 3 || p_radial_steps > 128);
 	radial_steps = p_radial_steps;
-	request_update();
+	_request_update();
 }
 int TubeTrailMesh::get_radial_steps() const {
 	return radial_steps;
@@ -2154,7 +2152,7 @@ int TubeTrailMesh::get_radial_steps() const {
 void TubeTrailMesh::set_sections(const int p_sections) {
 	ERR_FAIL_COND(p_sections < 2 || p_sections > 128);
 	sections = p_sections;
-	request_update();
+	_request_update();
 }
 int TubeTrailMesh::get_sections() const {
 	return sections;
@@ -2162,7 +2160,7 @@ int TubeTrailMesh::get_sections() const {
 
 void TubeTrailMesh::set_section_length(float p_section_length) {
 	section_length = p_section_length;
-	request_update();
+	_request_update();
 }
 float TubeTrailMesh::get_section_length() const {
 	return section_length;
@@ -2171,7 +2169,7 @@ float TubeTrailMesh::get_section_length() const {
 void TubeTrailMesh::set_section_rings(const int p_section_rings) {
 	ERR_FAIL_COND(p_section_rings < 1 || p_section_rings > 1024);
 	section_rings = p_section_rings;
-	request_update();
+	_request_update();
 }
 int TubeTrailMesh::get_section_rings() const {
 	return section_rings;
@@ -2179,7 +2177,7 @@ int TubeTrailMesh::get_section_rings() const {
 
 void TubeTrailMesh::set_cap_top(bool p_cap_top) {
 	cap_top = p_cap_top;
-	request_update();
+	_request_update();
 }
 
 bool TubeTrailMesh::is_cap_top() const {
@@ -2188,7 +2186,7 @@ bool TubeTrailMesh::is_cap_top() const {
 
 void TubeTrailMesh::set_cap_bottom(bool p_cap_bottom) {
 	cap_bottom = p_cap_bottom;
-	request_update();
+	_request_update();
 }
 
 bool TubeTrailMesh::is_cap_bottom() const {
@@ -2206,14 +2204,14 @@ void TubeTrailMesh::set_curve(const Ref<Curve> &p_curve) {
 	if (curve.is_valid()) {
 		curve->connect_changed(callable_mp(this, &TubeTrailMesh::_curve_changed));
 	}
-	request_update();
+	_request_update();
 }
 Ref<Curve> TubeTrailMesh::get_curve() const {
 	return curve;
 }
 
 void TubeTrailMesh::_curve_changed() {
-	request_update();
+	_request_update();
 }
 int TubeTrailMesh::get_builtin_bind_pose_count() const {
 	return sections + 1;
@@ -2472,19 +2470,19 @@ void TubeTrailMesh::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_curve", "curve"), &TubeTrailMesh::set_curve);
 	ClassDB::bind_method(D_METHOD("get_curve"), &TubeTrailMesh::get_curve);
 
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "radius", PROPERTY_HINT_RANGE, "0.001,100.0,0.001,or_greater,suffix:m"), "set_radius", "get_radius");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "radius", PropertyHint::RANGE, "0.001,100.0,0.001,or_greater,suffix:m"), "set_radius", "get_radius");
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "radial_steps", PROPERTY_HINT_RANGE, "3,128,1"), "set_radial_steps", "get_radial_steps");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "sections", PROPERTY_HINT_RANGE, "2,128,1"), "set_sections", "get_sections");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "radial_steps", PropertyHint::RANGE, "3,128,1"), "set_radial_steps", "get_radial_steps");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "sections", PropertyHint::RANGE, "2,128,1"), "set_sections", "get_sections");
 
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "section_length", PROPERTY_HINT_RANGE, "0.001,1024.0,0.001,or_greater,suffix:m"), "set_section_length", "get_section_length");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "section_length", PropertyHint::RANGE, "0.001,1024.0,0.001,or_greater,suffix:m"), "set_section_length", "get_section_length");
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "section_rings", PROPERTY_HINT_RANGE, "1,128,1"), "set_section_rings", "get_section_rings");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "section_rings", PropertyHint::RANGE, "1,128,1"), "set_section_rings", "get_section_rings");
 
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "cap_top"), "set_cap_top", "is_cap_top");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "cap_bottom"), "set_cap_bottom", "is_cap_bottom");
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "curve", PROPERTY_HINT_RESOURCE_TYPE, "Curve"), "set_curve", "get_curve");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "curve", PropertyHint::RESOURCE_TYPE, "Curve"), "set_curve", "get_curve");
 }
 
 TubeTrailMesh::TubeTrailMesh() {
@@ -2494,7 +2492,7 @@ TubeTrailMesh::TubeTrailMesh() {
 
 void RibbonTrailMesh::set_shape(Shape p_shape) {
 	shape = p_shape;
-	request_update();
+	_request_update();
 }
 RibbonTrailMesh::Shape RibbonTrailMesh::get_shape() const {
 	return shape;
@@ -2502,7 +2500,7 @@ RibbonTrailMesh::Shape RibbonTrailMesh::get_shape() const {
 
 void RibbonTrailMesh::set_size(const float p_size) {
 	size = p_size;
-	request_update();
+	_request_update();
 }
 float RibbonTrailMesh::get_size() const {
 	return size;
@@ -2511,7 +2509,7 @@ float RibbonTrailMesh::get_size() const {
 void RibbonTrailMesh::set_sections(const int p_sections) {
 	ERR_FAIL_COND(p_sections < 2 || p_sections > 128);
 	sections = p_sections;
-	request_update();
+	_request_update();
 }
 int RibbonTrailMesh::get_sections() const {
 	return sections;
@@ -2519,7 +2517,7 @@ int RibbonTrailMesh::get_sections() const {
 
 void RibbonTrailMesh::set_section_length(float p_section_length) {
 	section_length = p_section_length;
-	request_update();
+	_request_update();
 }
 float RibbonTrailMesh::get_section_length() const {
 	return section_length;
@@ -2528,7 +2526,7 @@ float RibbonTrailMesh::get_section_length() const {
 void RibbonTrailMesh::set_section_segments(const int p_section_segments) {
 	ERR_FAIL_COND(p_section_segments < 1 || p_section_segments > 1024);
 	section_segments = p_section_segments;
-	request_update();
+	_request_update();
 }
 int RibbonTrailMesh::get_section_segments() const {
 	return section_segments;
@@ -2545,14 +2543,14 @@ void RibbonTrailMesh::set_curve(const Ref<Curve> &p_curve) {
 	if (curve.is_valid()) {
 		curve->connect_changed(callable_mp(this, &RibbonTrailMesh::_curve_changed));
 	}
-	request_update();
+	_request_update();
 }
 Ref<Curve> RibbonTrailMesh::get_curve() const {
 	return curve;
 }
 
 void RibbonTrailMesh::_curve_changed() {
-	request_update();
+	_request_update();
 }
 int RibbonTrailMesh::get_builtin_bind_pose_count() const {
 	return sections + 1;
@@ -2703,12 +2701,12 @@ void RibbonTrailMesh::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_shape", "shape"), &RibbonTrailMesh::set_shape);
 	ClassDB::bind_method(D_METHOD("get_shape"), &RibbonTrailMesh::get_shape);
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "shape", PROPERTY_HINT_ENUM, "Flat,Cross"), "set_shape", "get_shape");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "size", PROPERTY_HINT_RANGE, "0.001,100.0,0.001,or_greater,suffix:m"), "set_size", "get_size");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "sections", PROPERTY_HINT_RANGE, "2,128,1"), "set_sections", "get_sections");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "section_length", PROPERTY_HINT_RANGE, "0.001,1024.0,0.001,or_greater,suffix:m"), "set_section_length", "get_section_length");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "section_segments", PROPERTY_HINT_RANGE, "1,128,1"), "set_section_segments", "get_section_segments");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "curve", PROPERTY_HINT_RESOURCE_TYPE, "Curve"), "set_curve", "get_curve");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "shape", PropertyHint::ENUM, "Flat,Cross"), "set_shape", "get_shape");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "size", PropertyHint::RANGE, "0.001,100.0,0.001,or_greater,suffix:m"), "set_size", "get_size");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "sections", PropertyHint::RANGE, "2,128,1"), "set_sections", "get_sections");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "section_length", PropertyHint::RANGE, "0.001,1024.0,0.001,or_greater,suffix:m"), "set_section_length", "get_section_length");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "section_segments", PropertyHint::RANGE, "1,128,1"), "set_section_segments", "get_section_segments");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "curve", PropertyHint::RESOURCE_TYPE, "Curve"), "set_curve", "get_curve");
 
 	BIND_ENUM_CONSTANT(SHAPE_FLAT)
 	BIND_ENUM_CONSTANT(SHAPE_CROSS)
@@ -2845,8 +2843,10 @@ void TextMesh::_generate_glyph_mesh_data(const GlyphMeshKey &p_key, const Glyph 
 		for (int j = 0; j < gl_data.contours[i].size(); j++) {
 			int next = (j + 1 == gl_data.contours[i].size()) ? 0 : (j + 1);
 
-			gl_data.min_p = gl_data.min_p.min(gl_data.contours[i][j].point);
-			gl_data.max_p = gl_data.max_p.max(gl_data.contours[i][j].point);
+			gl_data.min_p.x = MIN(gl_data.min_p.x, gl_data.contours[i][j].point.x);
+			gl_data.min_p.y = MIN(gl_data.min_p.y, gl_data.contours[i][j].point.y);
+			gl_data.max_p.x = MAX(gl_data.max_p.x, gl_data.contours[i][j].point.x);
+			gl_data.max_p.y = MAX(gl_data.max_p.y, gl_data.contours[i][j].point.y);
 			length += (gl_data.contours[i][next].point - gl_data.contours[i][j].point).length();
 
 			inp.GetPoint(j) = gl_data.contours[i][j].point;
@@ -3340,28 +3340,30 @@ void TextMesh::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_uppercase", "enable"), &TextMesh::set_uppercase);
 	ClassDB::bind_method(D_METHOD("is_uppercase"), &TextMesh::is_uppercase);
 
+	ClassDB::bind_method(D_METHOD("_request_update"), &TextMesh::_request_update);
+
 	ADD_GROUP("Text", "");
-	ADD_PROPERTY(PropertyInfo(Variant::STRING, "text", PROPERTY_HINT_MULTILINE_TEXT, ""), "set_text", "get_text");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "font", PROPERTY_HINT_RESOURCE_TYPE, "Font"), "set_font", "get_font");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "font_size", PROPERTY_HINT_RANGE, "1,256,1,or_greater,suffix:px"), "set_font_size", "get_font_size");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "horizontal_alignment", PROPERTY_HINT_ENUM, "Left,Center,Right,Fill"), "set_horizontal_alignment", "get_horizontal_alignment");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "vertical_alignment", PROPERTY_HINT_ENUM, "Top,Center,Bottom"), "set_vertical_alignment", "get_vertical_alignment");
+	ADD_PROPERTY(PropertyInfo(Variant::STRING, "text", PropertyHint::MULTILINE_TEXT, ""), "set_text", "get_text");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "font", PropertyHint::RESOURCE_TYPE, "Font"), "set_font", "get_font");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "font_size", PropertyHint::RANGE, "1,256,1,or_greater,suffix:px"), "set_font_size", "get_font_size");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "horizontal_alignment", PropertyHint::ENUM, "Left,Center,Right,Fill"), "set_horizontal_alignment", "get_horizontal_alignment");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "vertical_alignment", PropertyHint::ENUM, "Top,Center,Bottom"), "set_vertical_alignment", "get_vertical_alignment");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "uppercase"), "set_uppercase", "is_uppercase");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "line_spacing", PROPERTY_HINT_NONE, "suffix:px"), "set_line_spacing", "get_line_spacing");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "autowrap_mode", PROPERTY_HINT_ENUM, "Off,Arbitrary,Word,Word (Smart)"), "set_autowrap_mode", "get_autowrap_mode");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "justification_flags", PROPERTY_HINT_FLAGS, "Kashida Justification:1,Word Justification:2,Justify Only After Last Tab:8,Skip Last Line:32,Skip Last Line With Visible Characters:64,Do Not Skip Single Line:128"), "set_justification_flags", "get_justification_flags");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "line_spacing", PropertyHint::NONE, "suffix:px"), "set_line_spacing", "get_line_spacing");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "autowrap_mode", PropertyHint::ENUM, "Off,Arbitrary,Word,Word (Smart)"), "set_autowrap_mode", "get_autowrap_mode");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "justification_flags", PropertyHint::FLAGS, "Kashida Justification:1,Word Justification:2,Justify Only After Last Tab:8,Skip Last Line:32,Skip Last Line With Visible Characters:64,Do Not Skip Single Line:128"), "set_justification_flags", "get_justification_flags");
 
 	ADD_GROUP("Mesh", "");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "pixel_size", PROPERTY_HINT_RANGE, "0.0001,128,0.0001,suffix:m"), "set_pixel_size", "get_pixel_size");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "curve_step", PROPERTY_HINT_RANGE, "0.1,10,0.1,suffix:px"), "set_curve_step", "get_curve_step");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "depth", PROPERTY_HINT_RANGE, "0.0,100.0,0.001,or_greater,suffix:m"), "set_depth", "get_depth");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "width", PROPERTY_HINT_NONE, "suffix:px"), "set_width", "get_width");
-	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2, "offset", PROPERTY_HINT_NONE, "suffix:px"), "set_offset", "get_offset");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "pixel_size", PropertyHint::RANGE, "0.0001,128,0.0001,suffix:m"), "set_pixel_size", "get_pixel_size");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "curve_step", PropertyHint::RANGE, "0.1,10,0.1,suffix:px"), "set_curve_step", "get_curve_step");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "depth", PropertyHint::RANGE, "0.0,100.0,0.001,or_greater,suffix:m"), "set_depth", "get_depth");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "width", PropertyHint::NONE, "suffix:px"), "set_width", "get_width");
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2, "offset", PropertyHint::NONE, "suffix:px"), "set_offset", "get_offset");
 
 	ADD_GROUP("BiDi", "");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "text_direction", PROPERTY_HINT_ENUM, "Auto,Left-to-Right,Right-to-Left"), "set_text_direction", "get_text_direction");
-	ADD_PROPERTY(PropertyInfo(Variant::STRING, "language", PROPERTY_HINT_LOCALE_ID, ""), "set_language", "get_language");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "structured_text_bidi_override", PROPERTY_HINT_ENUM, "Default,URI,File,Email,List,None,Custom"), "set_structured_text_bidi_override", "get_structured_text_bidi_override");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "text_direction", PropertyHint::ENUM, "Auto,Left-to-Right,Right-to-Left"), "set_text_direction", "get_text_direction");
+	ADD_PROPERTY(PropertyInfo(Variant::STRING, "language", PropertyHint::LOCALE_ID, ""), "set_language", "get_language");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "structured_text_bidi_override", PropertyHint::ENUM, "Default,URI,File,Email,List,None,Custom"), "set_structured_text_bidi_override", "get_structured_text_bidi_override");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "structured_text_bidi_override_options"), "set_structured_text_bidi_override_options", "get_structured_text_bidi_override_options");
 }
 
@@ -3374,7 +3376,7 @@ void TextMesh::_notification(int p_what) {
 			}
 			xl_text = new_text;
 			dirty_text = true;
-			request_update();
+			_request_update();
 		} break;
 	}
 }
@@ -3400,7 +3402,7 @@ void TextMesh::set_horizontal_alignment(HorizontalAlignment p_alignment) {
 			dirty_lines = true;
 		}
 		horizontal_alignment = p_alignment;
-		request_update();
+		_request_update();
 	}
 }
 
@@ -3412,7 +3414,7 @@ void TextMesh::set_vertical_alignment(VerticalAlignment p_alignment) {
 	ERR_FAIL_INDEX((int)p_alignment, 4);
 	if (vertical_alignment != p_alignment) {
 		vertical_alignment = p_alignment;
-		request_update();
+		_request_update();
 	}
 }
 
@@ -3425,7 +3427,7 @@ void TextMesh::set_text(const String &p_string) {
 		text = p_string;
 		xl_text = tr(text);
 		dirty_text = true;
-		request_update();
+		_request_update();
 	}
 }
 
@@ -3436,7 +3438,7 @@ String TextMesh::get_text() const {
 void TextMesh::_font_changed() {
 	dirty_font = true;
 	dirty_cache = true;
-	callable_mp(static_cast<PrimitiveMesh *>(this), &PrimitiveMesh::request_update).call_deferred();
+	call_deferred(SNAME("_request_update"));
 }
 
 void TextMesh::set_font(const Ref<Font> &p_font) {
@@ -3452,7 +3454,7 @@ void TextMesh::set_font(const Ref<Font> &p_font) {
 		if (font_override.is_valid()) {
 			font_override->connect_changed(font_changed);
 		}
-		request_update();
+		_request_update();
 	}
 }
 
@@ -3461,8 +3463,6 @@ Ref<Font> TextMesh::get_font() const {
 }
 
 Ref<Font> TextMesh::_get_font_or_default() const {
-	// Similar code taken from `FontVariation::_get_base_font_or_default`.
-
 	if (font_override.is_valid()) {
 		return font_override;
 	}
@@ -3472,12 +3472,7 @@ Ref<Font> TextMesh::_get_font_or_default() const {
 	ThemeDB::get_singleton()->get_native_type_dependencies(get_class_name(), &theme_types);
 
 	ThemeContext *global_context = ThemeDB::get_singleton()->get_default_theme_context();
-	List<Ref<Theme>> themes = global_context->get_themes();
-	if (Engine::get_singleton()->is_editor_hint()) {
-		themes.push_front(ThemeDB::get_singleton()->get_project_theme());
-	}
-
-	for (const Ref<Theme> &theme : themes) {
+	for (const Ref<Theme> &theme : global_context->get_themes()) {
 		if (theme.is_null()) {
 			continue;
 		}
@@ -3497,7 +3492,7 @@ void TextMesh::set_font_size(int p_size) {
 		font_size = CLAMP(p_size, 1, 127);
 		dirty_font = true;
 		dirty_cache = true;
-		request_update();
+		_request_update();
 	}
 }
 
@@ -3508,7 +3503,7 @@ int TextMesh::get_font_size() const {
 void TextMesh::set_line_spacing(float p_line_spacing) {
 	if (line_spacing != p_line_spacing) {
 		line_spacing = p_line_spacing;
-		request_update();
+		_request_update();
 	}
 }
 
@@ -3520,7 +3515,7 @@ void TextMesh::set_autowrap_mode(TextServer::AutowrapMode p_mode) {
 	if (autowrap_mode != p_mode) {
 		autowrap_mode = p_mode;
 		dirty_lines = true;
-		request_update();
+		_request_update();
 	}
 }
 
@@ -3532,7 +3527,7 @@ void TextMesh::set_justification_flags(BitField<TextServer::JustificationFlag> p
 	if (jst_flags != p_flags) {
 		jst_flags = p_flags;
 		dirty_lines = true;
-		request_update();
+		_request_update();
 	}
 }
 
@@ -3543,7 +3538,7 @@ BitField<TextServer::JustificationFlag> TextMesh::get_justification_flags() cons
 void TextMesh::set_depth(real_t p_depth) {
 	if (depth != p_depth) {
 		depth = MAX(p_depth, 0.0);
-		request_update();
+		_request_update();
 	}
 }
 
@@ -3555,7 +3550,7 @@ void TextMesh::set_width(real_t p_width) {
 	if (width != p_width) {
 		width = p_width;
 		dirty_lines = true;
-		request_update();
+		_request_update();
 	}
 }
 
@@ -3567,7 +3562,7 @@ void TextMesh::set_pixel_size(real_t p_amount) {
 	if (pixel_size != p_amount) {
 		pixel_size = CLAMP(p_amount, 0.0001, 128.0);
 		dirty_cache = true;
-		request_update();
+		_request_update();
 	}
 }
 
@@ -3578,7 +3573,7 @@ real_t TextMesh::get_pixel_size() const {
 void TextMesh::set_offset(const Point2 &p_offset) {
 	if (lbl_offset != p_offset) {
 		lbl_offset = p_offset;
-		request_update();
+		_request_update();
 	}
 }
 
@@ -3590,7 +3585,7 @@ void TextMesh::set_curve_step(real_t p_step) {
 	if (curve_step != p_step) {
 		curve_step = CLAMP(p_step, 0.1, 10.0);
 		dirty_cache = true;
-		request_update();
+		_request_update();
 	}
 }
 
@@ -3603,7 +3598,7 @@ void TextMesh::set_text_direction(TextServer::Direction p_text_direction) {
 	if (text_direction != p_text_direction) {
 		text_direction = p_text_direction;
 		dirty_text = true;
-		request_update();
+		_request_update();
 	}
 }
 
@@ -3615,7 +3610,7 @@ void TextMesh::set_language(const String &p_language) {
 	if (language != p_language) {
 		language = p_language;
 		dirty_text = true;
-		request_update();
+		_request_update();
 	}
 }
 
@@ -3627,7 +3622,7 @@ void TextMesh::set_structured_text_bidi_override(TextServer::StructuredTextParse
 	if (st_parser != p_parser) {
 		st_parser = p_parser;
 		dirty_text = true;
-		request_update();
+		_request_update();
 	}
 }
 
@@ -3639,7 +3634,7 @@ void TextMesh::set_structured_text_bidi_override_options(Array p_args) {
 	if (st_args != p_args) {
 		st_args = p_args;
 		dirty_text = true;
-		request_update();
+		_request_update();
 	}
 }
 
@@ -3651,7 +3646,7 @@ void TextMesh::set_uppercase(bool p_uppercase) {
 	if (uppercase != p_uppercase) {
 		uppercase = p_uppercase;
 		dirty_text = true;
-		request_update();
+		_request_update();
 	}
 }
 

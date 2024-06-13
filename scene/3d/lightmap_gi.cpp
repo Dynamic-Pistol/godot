@@ -263,10 +263,10 @@ void LightmapGIData::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_set_probe_data", "data"), &LightmapGIData::_set_probe_data);
 	ClassDB::bind_method(D_METHOD("_get_probe_data"), &LightmapGIData::_get_probe_data);
 
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "lightmap_textures", PROPERTY_HINT_ARRAY_TYPE, "TextureLayered", PROPERTY_USAGE_NO_EDITOR), "set_lightmap_textures", "get_lightmap_textures");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "uses_spherical_harmonics", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR | PROPERTY_USAGE_INTERNAL), "set_uses_spherical_harmonics", "is_using_spherical_harmonics");
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "user_data", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR | PROPERTY_USAGE_INTERNAL), "_set_user_data", "_get_user_data");
-	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "probe_data", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR | PROPERTY_USAGE_INTERNAL), "_set_probe_data", "_get_probe_data");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "lightmap_textures", PropertyHint::ARRAY_TYPE, "TextureLayered", PropertyUsageFlags::NO_EDITOR), "set_lightmap_textures", "get_lightmap_textures");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "uses_spherical_harmonics", PropertyHint::NONE, "", PropertyUsageFlags::NO_EDITOR | PropertyUsageFlags::INTERNAL), "set_uses_spherical_harmonics", "is_using_spherical_harmonics");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "user_data", PropertyHint::NONE, "", PropertyUsageFlags::NO_EDITOR | PropertyUsageFlags::INTERNAL), "_set_user_data", "_get_user_data");
+	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "probe_data", PropertyHint::NONE, "", PropertyUsageFlags::NO_EDITOR | PropertyUsageFlags::INTERNAL), "_set_probe_data", "_get_probe_data");
 
 #ifndef DISABLE_DEPRECATED
 	ClassDB::bind_method(D_METHOD("set_light_texture", "light_texture"), &LightmapGIData::set_light_texture);
@@ -275,8 +275,8 @@ void LightmapGIData::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_set_light_textures_data", "data"), &LightmapGIData::_set_light_textures_data);
 	ClassDB::bind_method(D_METHOD("_get_light_textures_data"), &LightmapGIData::_get_light_textures_data);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "light_texture", PROPERTY_HINT_RESOURCE_TYPE, "TextureLayered", PROPERTY_USAGE_EDITOR), "set_light_texture", "get_light_texture");
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "light_textures", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR | PROPERTY_USAGE_INTERNAL), "_set_light_textures_data", "_get_light_textures_data");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "light_texture", PropertyHint::RESOURCE_TYPE, "TextureLayered", PropertyUsageFlags::EDITOR), "set_light_texture", "get_light_texture");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "light_textures", PropertyHint::NONE, "", PropertyUsageFlags::NO_EDITOR | PropertyUsageFlags::INTERNAL), "_set_light_textures_data", "_get_light_textures_data");
 #endif
 }
 
@@ -397,10 +397,7 @@ int LightmapGI::_bsp_get_simplex_side(const Vector<Vector3> &p_points, const Loc
 	const BSPSimplex &s = p_simplices[p_simplex];
 	for (int i = 0; i < 4; i++) {
 		const Vector3 v = p_points[s.vertices[i]];
-		// The tolerance used here comes from experiments on scenes up to
-		// 1000x1000x100 meters. If it's any smaller, some simplices will
-		// appear to self-intersect due to a lack of precision in Plane.
-		if (p_plane.has_point(v, 1.0 / (1 << 13))) {
+		if (p_plane.has_point(v)) {
 			// Coplanar.
 		} else if (p_plane.is_point_over(v)) {
 			over++;
@@ -422,8 +419,7 @@ int LightmapGI::_bsp_get_simplex_side(const Vector<Vector3> &p_points, const Loc
 //#define DEBUG_BSP
 
 int32_t LightmapGI::_compute_bsp_tree(const Vector<Vector3> &p_points, const LocalVector<Plane> &p_planes, LocalVector<int32_t> &planes_tested, const LocalVector<BSPSimplex> &p_simplices, const LocalVector<int32_t> &p_simplex_indices, LocalVector<BSPNode> &bsp_nodes) {
-	ERR_FAIL_COND_V(p_simplex_indices.size() < 2, -1);
-
+	//if we reach here, it means there is more than one simplex
 	int32_t node_index = (int32_t)bsp_nodes.size();
 	bsp_nodes.push_back(BSPNode());
 
@@ -481,55 +477,16 @@ int32_t LightmapGI::_compute_bsp_tree(const Vector<Vector3> &p_points, const Loc
 
 			float score = 0; //by default, score is 0 (worst)
 			if (over_count > 0) {
-				// Simplices that are intersected by the plane are moved into both the over
-				// and under subtrees which makes the entire tree deeper, so the best plane
-				// will have the least intersections while separating the simplices evenly.
-				float balance = float(under_count) / over_count;
-				float separation = float(over_count + under_count) / p_simplex_indices.size();
-				score = balance * separation * separation;
+				//give score mainly based on ratio (under / over), this means that this plane is splitting simplices a lot, but its balanced
+				score = float(under_count) / over_count;
 			}
+
+			//adjusting priority over least splits, probably not a great idea
+			//score *= Math::sqrt(float(over_count + under_count) / p_simplex_indices.size()); //also multiply score
 
 			if (score > best_plane_score) {
 				best_plane = plane;
 				best_plane_score = score;
-			}
-		}
-	}
-
-	// We often end up with two (or on rare occasions, three) simplices that are
-	// either disjoint or share one vertex and don't have a separating plane
-	// among their faces. The fallback is to loop through new planes created
-	// with one vertex of the first simplex and two vertices of the second until
-	// we find a winner.
-	if (best_plane_score == 0) {
-		const BSPSimplex &simplex0 = p_simplices[p_simplex_indices[0]];
-		const BSPSimplex &simplex1 = p_simplices[p_simplex_indices[1]];
-
-		for (uint32_t i = 0; i < 4 && !best_plane_score; i++) {
-			Vector3 v0 = p_points[simplex0.vertices[i]];
-			for (uint32_t j = 0; j < 3 && !best_plane_score; j++) {
-				if (simplex0.vertices[i] == simplex1.vertices[j]) {
-					break;
-				}
-				Vector3 v1 = p_points[simplex1.vertices[j]];
-				for (uint32_t k = j + 1; k < 4; k++) {
-					if (simplex0.vertices[i] == simplex1.vertices[k]) {
-						break;
-					}
-					Vector3 v2 = p_points[simplex1.vertices[k]];
-
-					Plane plane = Plane(v0, v1, v2);
-					if (plane == Plane()) { // When v0, v1, and v2 are collinear, they can't form a plane.
-						continue;
-					}
-					int32_t side0 = _bsp_get_simplex_side(p_points, p_simplices, plane, p_simplex_indices[0]);
-					int32_t side1 = _bsp_get_simplex_side(p_points, p_simplices, plane, p_simplex_indices[1]);
-					if ((side0 == 1 && side1 == -1) || (side0 == -1 && side1 == 1)) {
-						best_plane = plane;
-						best_plane_score = 1.0;
-						break;
-					}
-				}
 			}
 		}
 	}
@@ -558,6 +515,8 @@ int32_t LightmapGI::_compute_bsp_tree(const Vector<Vector3> &p_points, const Loc
 #endif
 
 	if (best_plane_score < 0.0 || indices_over.size() == p_simplex_indices.size() || indices_under.size() == p_simplex_indices.size()) {
+		ERR_FAIL_COND_V(p_simplex_indices.size() <= 1, 0); //should not happen, this is a bug
+
 		// Failed to separate the tetrahedrons using planes
 		// this means Delaunay broke at some point.
 		// Luckily, because we are using tetrahedrons, we can resort to
@@ -1102,7 +1061,7 @@ LightmapGI::BakeError LightmapGI::bake(Node *p_from_node, String p_image_data_pa
 		}
 	}
 
-	Lightmapper::BakeError bake_err = lightmapper->bake(Lightmapper::BakeQuality(bake_quality), use_denoiser, denoiser_strength, denoiser_range, bounces, bounce_indirect_energy, bias, max_texture_size, directional, use_texture_for_bounces, Lightmapper::GenerateProbes(gen_probes), environment_image, environment_transform, _lightmap_bake_step_function, &bsud, exposure_normalization);
+	Lightmapper::BakeError bake_err = lightmapper->bake(Lightmapper::BakeQuality(bake_quality), use_denoiser, denoiser_strength, bounces, bounce_indirect_energy, bias, max_texture_size, directional, use_texture_for_bounces, Lightmapper::GenerateProbes(gen_probes), environment_image, environment_transform, _lightmap_bake_step_function, &bsud, exposure_normalization);
 
 	if (bake_err == Lightmapper::BAKE_ERROR_LIGHTMAP_TOO_SMALL) {
 		return BAKE_ERROR_TEXTURE_SIZE_TOO_SMALL;
@@ -1450,14 +1409,6 @@ float LightmapGI::get_denoiser_strength() const {
 	return denoiser_strength;
 }
 
-void LightmapGI::set_denoiser_range(int p_denoiser_range) {
-	denoiser_range = p_denoiser_range;
-}
-
-int LightmapGI::get_denoiser_range() const {
-	return denoiser_range;
-}
-
 void LightmapGI::set_directional(bool p_enable) {
 	directional = p_enable;
 }
@@ -1577,8 +1528,8 @@ Ref<CameraAttributes> LightmapGI::get_camera_attributes() const {
 	return camera_attributes;
 }
 
-PackedStringArray LightmapGI::get_configuration_warnings() const {
-	PackedStringArray warnings = Node::get_configuration_warnings();
+Array LightmapGI::get_configuration_warnings() const {
+	Array warnings = Node::get_configuration_warnings();
 
 	if (OS::get_singleton()->get_current_rendering_method() == "gl_compatibility") {
 		warnings.push_back(RTR("Lightmap can only be baked from a device that supports the RD backends. Lightmap baking may fail."));
@@ -1590,19 +1541,16 @@ PackedStringArray LightmapGI::get_configuration_warnings() const {
 
 void LightmapGI::_validate_property(PropertyInfo &p_property) const {
 	if (p_property.name == "environment_custom_sky" && environment_mode != ENVIRONMENT_MODE_CUSTOM_SKY) {
-		p_property.usage = PROPERTY_USAGE_NONE;
+		p_property.usage = PropertyUsageFlags::NONE;
 	}
 	if (p_property.name == "environment_custom_color" && environment_mode != ENVIRONMENT_MODE_CUSTOM_COLOR) {
-		p_property.usage = PROPERTY_USAGE_NONE;
+		p_property.usage = PropertyUsageFlags::NONE;
 	}
 	if (p_property.name == "environment_custom_energy" && environment_mode != ENVIRONMENT_MODE_CUSTOM_COLOR && environment_mode != ENVIRONMENT_MODE_CUSTOM_SKY) {
-		p_property.usage = PROPERTY_USAGE_NONE;
+		p_property.usage = PropertyUsageFlags::NONE;
 	}
 	if (p_property.name == "denoiser_strength" && !use_denoiser) {
-		p_property.usage = PROPERTY_USAGE_NONE;
-	}
-	if (p_property.name == "denoiser_range" && !use_denoiser) {
-		p_property.usage = PROPERTY_USAGE_NONE;
+		p_property.usage = PropertyUsageFlags::NONE;
 	}
 }
 
@@ -1649,9 +1597,6 @@ void LightmapGI::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_denoiser_strength", "denoiser_strength"), &LightmapGI::set_denoiser_strength);
 	ClassDB::bind_method(D_METHOD("get_denoiser_strength"), &LightmapGI::get_denoiser_strength);
 
-	ClassDB::bind_method(D_METHOD("set_denoiser_range", "denoiser_range"), &LightmapGI::set_denoiser_range);
-	ClassDB::bind_method(D_METHOD("get_denoiser_range"), &LightmapGI::get_denoiser_range);
-
 	ClassDB::bind_method(D_METHOD("set_interior", "enable"), &LightmapGI::set_interior);
 	ClassDB::bind_method(D_METHOD("is_interior"), &LightmapGI::is_interior);
 
@@ -1667,28 +1612,27 @@ void LightmapGI::_bind_methods() {
 	//	ClassDB::bind_method(D_METHOD("bake", "from_node"), &LightmapGI::bake, DEFVAL(Variant()));
 
 	ADD_GROUP("Tweaks", "");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "quality", PROPERTY_HINT_ENUM, "Low,Medium,High,Ultra"), "set_bake_quality", "get_bake_quality");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "bounces", PROPERTY_HINT_RANGE, "0,6,1,or_greater"), "set_bounces", "get_bounces");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "bounce_indirect_energy", PROPERTY_HINT_RANGE, "0,2,0.01"), "set_bounce_indirect_energy", "get_bounce_indirect_energy");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "quality", PropertyHint::ENUM, "Low,Medium,High,Ultra"), "set_bake_quality", "get_bake_quality");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "bounces", PropertyHint::RANGE, "0,6,1,or_greater"), "set_bounces", "get_bounces");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "bounce_indirect_energy", PropertyHint::RANGE, "0,2,0.01"), "set_bounce_indirect_energy", "get_bounce_indirect_energy");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "directional"), "set_directional", "is_directional");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_texture_for_bounces"), "set_use_texture_for_bounces", "is_using_texture_for_bounces");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "interior"), "set_interior", "is_interior");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_denoiser"), "set_use_denoiser", "is_using_denoiser");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "denoiser_strength", PROPERTY_HINT_RANGE, "0.001,0.2,0.001,or_greater"), "set_denoiser_strength", "get_denoiser_strength");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "denoiser_range", PROPERTY_HINT_RANGE, "1,20"), "set_denoiser_range", "get_denoiser_range");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "bias", PROPERTY_HINT_RANGE, "0.00001,0.1,0.00001,or_greater"), "set_bias", "get_bias");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "texel_scale", PROPERTY_HINT_RANGE, "0.01,100.0,0.01"), "set_texel_scale", "get_texel_scale");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "max_texture_size", PROPERTY_HINT_RANGE, "2048,16384,1"), "set_max_texture_size", "get_max_texture_size");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "denoiser_strength", PropertyHint::RANGE, "0.001,0.2,0.001,or_greater"), "set_denoiser_strength", "get_denoiser_strength");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "bias", PropertyHint::RANGE, "0.00001,0.1,0.00001,or_greater"), "set_bias", "get_bias");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "texel_scale", PropertyHint::RANGE, "0.01,100.0,0.01"), "set_texel_scale", "get_texel_scale");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "max_texture_size", PropertyHint::RANGE, "2048,16384,1"), "set_max_texture_size", "get_max_texture_size");
 	ADD_GROUP("Environment", "environment_");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "environment_mode", PROPERTY_HINT_ENUM, "Disabled,Scene,Custom Sky,Custom Color"), "set_environment_mode", "get_environment_mode");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "environment_custom_sky", PROPERTY_HINT_RESOURCE_TYPE, "Sky"), "set_environment_custom_sky", "get_environment_custom_sky");
-	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "environment_custom_color", PROPERTY_HINT_COLOR_NO_ALPHA), "set_environment_custom_color", "get_environment_custom_color");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "environment_custom_energy", PROPERTY_HINT_RANGE, "0,64,0.01"), "set_environment_custom_energy", "get_environment_custom_energy");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "camera_attributes", PROPERTY_HINT_RESOURCE_TYPE, "CameraAttributesPractical,CameraAttributesPhysical"), "set_camera_attributes", "get_camera_attributes");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "environment_mode", PropertyHint::ENUM, "Disabled,Scene,Custom Sky,Custom Color"), "set_environment_mode", "get_environment_mode");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "environment_custom_sky", PropertyHint::RESOURCE_TYPE, "Sky"), "set_environment_custom_sky", "get_environment_custom_sky");
+	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "environment_custom_color", PropertyHint::COLOR_NO_ALPHA), "set_environment_custom_color", "get_environment_custom_color");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "environment_custom_energy", PropertyHint::RANGE, "0,64,0.01"), "set_environment_custom_energy", "get_environment_custom_energy");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "camera_attributes", PropertyHint::RESOURCE_TYPE, "CameraAttributesPractical,CameraAttributesPhysical"), "set_camera_attributes", "get_camera_attributes");
 	ADD_GROUP("Gen Probes", "generate_probes_");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "generate_probes_subdiv", PROPERTY_HINT_ENUM, "Disabled,4,8,16,32"), "set_generate_probes", "get_generate_probes");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "generate_probes_subdiv", PropertyHint::ENUM, "Disabled,4,8,16,32"), "set_generate_probes", "get_generate_probes");
 	ADD_GROUP("Data", "");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "light_data", PROPERTY_HINT_RESOURCE_TYPE, "LightmapGIData"), "set_light_data", "get_light_data");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "light_data", PropertyHint::RESOURCE_TYPE, "LightmapGIData"), "set_light_data", "get_light_data");
 
 	BIND_ENUM_CONSTANT(BAKE_QUALITY_LOW);
 	BIND_ENUM_CONSTANT(BAKE_QUALITY_MEDIUM);

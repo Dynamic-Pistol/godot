@@ -593,7 +593,7 @@ void EditorFeatureProfileManager::_class_list_item_selected() {
 
 	bool has_editor_props = false;
 	for (const PropertyInfo &E : props) {
-		if (E.usage & PROPERTY_USAGE_EDITOR) {
+		if (E.usage & PropertyUsageFlags::EDITOR) {
 			has_editor_props = true;
 			break;
 		}
@@ -608,7 +608,7 @@ void EditorFeatureProfileManager::_class_list_item_selected() {
 
 		for (const PropertyInfo &E : props) {
 			String name = E.name;
-			if (!(E.usage & PROPERTY_USAGE_EDITOR)) {
+			if (!(E.usage & PropertyUsageFlags::EDITOR)) {
 				continue;
 			}
 			const String text = EditorPropertyNameProcessor::get_singleton()->process_name(name, text_style, name, class_name);
