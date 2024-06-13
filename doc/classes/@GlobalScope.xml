@@ -1571,6 +1571,9 @@
 		<member name="Geometry3D" type="Geometry3D" setter="" getter="">
 			The [Geometry3D] singleton.
 		</member>
+		<member name="GodotSharp" type="GodotSharp" setter="" getter="">
+			The [GodotSharp] singleton.
+		</member>
 		<member name="IP" type="IP" setter="" getter="">
 			The [IP] singleton.
 		</member>
@@ -2917,6 +2920,9 @@
 		<constant name="PROPERTY_HINT_ARRAY_TYPE" value="31" enum="PropertyHint">
 			Hints that a property is an [Array] with the stored type specified in the hint string.
 		</constant>
+		<constant name="PROPERTY_HINT_DICTIONARY_TYPE" value="38" enum="PropertyHint">
+			Hints that a property is a [Dictionary] with the stored types specified in the hint string.
+		</constant>
 		<constant name="PROPERTY_HINT_LOCALE_ID" value="32" enum="PropertyHint">
 			Hints that a string property is a locale code. Editing it will show a locale dialog for picking language and country.
 		</constant>
@@ -2931,10 +2937,6 @@
 		</constant>
 		<constant name="PROPERTY_HINT_PASSWORD" value="36" enum="PropertyHint">
 			Hints that a string property is a password, and every character is replaced with the secret character.
-		</constant>
-		<constant name="PROPERTY_HINT_INPUT_NAME" value="38" enum="PropertyHint">
-			Hints that a string property is an input action name, and can select any action name from the input map.
-			If the [code]"allow_builtin"[/code] is used as a parameter, then built-in input actions can be used.
 		</constant>
 		<constant name="PROPERTY_HINT_MAX" value="39" enum="PropertyHint">
 			Represents the size of the [enum PropertyHint] enum.
